@@ -1,0 +1,54 @@
+# P9 DEV 运行输入内容门禁
+
+日期：2026-09-02。属于 P9.2b 工程准备，不是参数研究或执行授权。
+
+## 契约
+
+`src/slagalpha/research/execution_inputs.py` 对正式 DEV 运行所声明的文件逐字节计算 SHA-256，
+并生成内容寻址的 readiness 报告。必需类别包括：
+
+- 策略规则、环境锁、研究 split、输入审计、敏感度计划、参数版本；
+- 历史合约注册表、排除表、Universe 汇总；
+- 多周期 Candle、1m Candle、Funding、归档来源和依赖工件。
+
+Aggregate Trades 是可选类别：缺失时 P7 固定使用 OHLC 不利顺序，因此不作为启动阻断，
+但实际使用时仍必须纳入哈希清单。
+
+门禁只接受规范的项目相对 POSIX 路径，拒绝绝对路径、`..`、非规范分隔符、符号链接、
+目录和根目录逃逸。读取完整文件前后检查大小与修改时间；字节哈希不符、读取失败或读取中
+变化均失败关闭。报告重新核对已验证类别、缺失类别、阻断集合和自身内容哈希。
+
+参数工件必须先通过与敏感度计划的内容绑定。即使全部文件哈希通过，报告仍固定
+`research_authorized=false`、`strategy_executed=false`、`locked_test_consumed=false`；
+它不能自行调用 P7。
+
+## 当前真实结果
+
+运行：
+
+```powershell
+.venv\Scripts\python.exe scripts\p9_dev_execution_inputs.py
+```
+
+脚本使用代码中冻结的期望哈希，不从文件现算“期望值”。当前 10 类已有工件逐字节匹配，
+报告哈希为：
+
+`9007957356b096a0e5efccc93dde245c48977e7e74b88851af16adef0c8fe7cf`
+
+状态为 `BLOCKED`，缺少四类：
+
+- `CANDLE_ONE_MINUTE`
+- `DEPENDENCY_ARTIFACTS`
+- `EXCLUSION_LEDGER`
+- `FUNDING`
+
+同时保留 `NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS`。因此没有研究授权，也没有
+生成运行结果。
+
+## 尚未解决的语义门禁
+
+该报告证明的是“所选文件字节与预期哈希一致”，不证明文件业务内容足够覆盖研究区间。
+当前多周期 normalization batch 本身仍为 `complete=false`，含 27 个规范化失败；历史规则
+也全部未验证。下一层语义门禁必须解析各 manifest，核对 complete、区间、Universe、
+注册表/排除表版本、1m 与 Funding 覆盖和依赖工件来源。未通过前不得把内容哈希通过理解为
+数据已就绪。

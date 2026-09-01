@@ -88,3 +88,7 @@ DEV RunManifest、不可覆盖的结果保存和只读前检也已实现，见
 10 个计划候选现已有内容寻址的 DEV 参数版本，并绑定策略规则与敏感度计划，见
 `docs/p9-parameter-version-contract.md`。这不代表选择了最优参数；正式执行器仍需验证全部
 运行输入并保留历史规则阻断。
+
+正式 DEV 文件内容哈希门禁也已实现，真实报告验证 10 类既有工件，明确缺少 1m、
+Funding、排除表和依赖工件，见 `docs/p9-dev-execution-inputs.md`。manifest 的业务完整性
+和区间覆盖仍待下一层门禁验证。
