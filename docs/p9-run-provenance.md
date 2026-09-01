@@ -79,8 +79,9 @@ artifacts/runs/<run_id>/
 报告的 `CHECKS_PASSED` 只表示这些前置检查通过，始终 `research_authorized=false`。
 参数版本工件及独立计划绑定校验已实现；另有选择具体候选的文件内容哈希门禁，见
 `docs/p9-dev-execution-inputs.md`。当前有限前检不替代该门禁。正式执行器集成、各 manifest
-语义与区间覆盖、实际事件时刻的历史规则、1m/Funding 和依赖工件来源仍需后续验证，
-不能拿任一准备报告启动锁定测试。
+语义与交叉引用门禁也已实现，见 `docs/p9-dev-execution-semantics.md`；它确认多周期输入
+不完整。实际事件时刻的历史规则、1m/Funding schema 与数据、排除表和依赖工件来源仍需
+后续验证，不能拿任一准备报告启动锁定测试。
 
 退出码：0 = 有限前检通过，1 = 正常发现阻断，2 = 环境不匹配或前检输入/读写错误。
 

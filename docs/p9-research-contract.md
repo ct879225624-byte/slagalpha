@@ -91,4 +91,5 @@ DEV RunManifest、不可覆盖的结果保存和只读前检也已实现，见
 
 正式 DEV 文件内容哈希门禁也已实现，真实报告验证 10 类既有工件，明确缺少 1m、
 Funding、排除表和依赖工件，见 `docs/p9-dev-execution-inputs.md`。manifest 的业务完整性
-和区间覆盖仍待下一层门禁验证。
+和区间交叉引用门禁现也已实现；真实报告另确认多周期 normalization batch 不完整，见
+`docs/p9-dev-execution-semantics.md`。

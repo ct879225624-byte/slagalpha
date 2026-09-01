@@ -49,6 +49,6 @@ Aggregate Trades 是可选类别：缺失时 P7 固定使用 OHLC 不利顺序�
 
 该报告证明的是“所选文件字节与预期哈希一致”，不证明文件业务内容足够覆盖研究区间。
 当前多周期 normalization batch 本身仍为 `complete=false`，含 27 个规范化失败；历史规则
-也全部未验证。下一层语义门禁必须解析各 manifest，核对 complete、区间、Universe、
-注册表/排除表版本、1m 与 Funding 覆盖和依赖工件来源。未通过前不得把内容哈希通过理解为
-数据已就绪。
+也全部未验证。下一层语义门禁已实现并确认这些阻断，见
+`docs/p9-dev-execution-semantics.md`。1m、Funding 和依赖工件仍缺少正式 manifest schema；
+未通过前不得把内容哈希通过理解为数据已就绪。

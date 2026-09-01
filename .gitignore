@@ -32,6 +32,7 @@ dist/
 !/data/manifests/contract_registry/
 !/data/manifests/coverage_loss/
 !/data/manifests/dev_execution_inputs/
+!/data/manifests/dev_execution_semantics/
 !/data/manifests/dev_rule_gaps/
 !/data/manifests/exchange_info/
 !/data/manifests/historical_rule_gate/
