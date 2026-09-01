@@ -253,6 +253,39 @@ def write_universe_snapshot(snapshot: UniverseSnapshot, data_dir: Path) -> Path:
     return destination
 
 
+def write_exclusion_ledger(ledger: ExclusionLedger, data_dir: Path) -> Path:
+    """Persist the exact reviewed ledger bytes without changing its semantic version."""
+
+    ledger = ExclusionLedger.model_validate(ledger.model_dump(mode="json"))
+    content = (
+        json.dumps(
+            ledger.model_dump(mode="json"),
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode()
+    content_hash = hashlib.sha256(content).hexdigest()
+    destination = (
+        data_dir / "manifests" / "exclusion_ledger" / f"{content_hash}.json"
+    )
+    if destination.exists():
+        if destination.is_symlink() or destination.read_bytes() != content:
+            raise UniverseSelectionError(
+                f"existing content-addressed exclusion ledger changed: {destination}"
+            )
+        return destination
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(f".{destination.name}.{uuid4().hex}.part")
+    try:
+        temporary.write_bytes(content)
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return destination
+
+
 def _blocked(
     symbol: str,
     reason_codes: tuple[UniverseBlockReason, ...],

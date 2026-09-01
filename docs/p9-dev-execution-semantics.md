@@ -30,17 +30,16 @@
 
 报告哈希：
 
-`d3125d578efff0b16d2e406762131ad7cdbe8b4f1877e9a0d28332db1a0ec242`
+`00104d25f2d297d2160a0ee471c1ac29fab4713744bdd8582e0b80a82e5a23ad`
 
-9 类通过解析与交叉引用：Archive、合约规则注册表、环境锁、参数版本、输入审计、split、
-敏感度计划、策略规则和 Universe。
+10 类通过解析与交叉引用：Archive、合约规则注册表、环境锁、显式空排除表、参数版本、
+输入审计、split、敏感度计划、策略规则和 Universe。
 
-5 类仍 deferred：
+4 类仍 deferred：
 
 - 多周期 Candle：已提供的 normalization batch 为 `complete=false`，27 个文件规范化失败。
 - 1m Candle：没有正式输入 manifest。
 - Funding：没有正式输入 manifest。
-- 排除表：Universe 引用 `empty-ledger/0.1.0`，但没有独立可哈希工件。
 - 依赖工件：只有环境版本锁，没有 wheel/source artifact 哈希清单。
 
 报告还保留历史规则 0 个合格成员日的既有阻断。状态为 `BLOCKED`，固定

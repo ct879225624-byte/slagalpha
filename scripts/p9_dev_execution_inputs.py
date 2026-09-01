@@ -43,6 +43,10 @@ SELECTIONS = (
      "data/manifests/contract_registry/"
      "f2a9370598caed227566b0c0903b215cd491aea45588d56e1dc3aea1b4e45ea0.json",
      "063d9e90fd61aee96232eba1bd9a019e4a710373c0625086b728eb9ab9c91d5c"),
+    (InputArtifactRole.EXCLUSION_LEDGER,
+     "data/manifests/exclusion_ledger/"
+     "6d975a9efba4902e35060f00845c0a7abb524790c9972705790eee5e7ead07f5.json",
+     "6d975a9efba4902e35060f00845c0a7abb524790c9972705790eee5e7ead07f5"),
     (InputArtifactRole.UNIVERSE,
      "data/manifests/universe_batch/"
      "1b995e73691ae8b034f429677781e727716fb2909537f1f7643f04ec5cbae520.json",

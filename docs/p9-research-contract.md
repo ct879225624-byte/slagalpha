@@ -93,3 +93,6 @@ DEV RunManifest、不可覆盖的结果保存和只读前检也已实现，见
 Funding、排除表和依赖工件，见 `docs/p9-dev-execution-inputs.md`。manifest 的业务完整性
 和区间交叉引用门禁现也已实现；真实报告另确认多周期 normalization batch 不完整，见
 `docs/p9-dev-execution-semantics.md`。
+
+Universe 引用的零条目 `empty-ledger/0.1.0` 现已保存为独立内容寻址工件并通过版本核对，
+见 `docs/p9-exclusion-ledger-artifact.md`。这只是补齐既有输入溯源，没有新增排除规则。
