@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.pytest-tmp/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+.venv/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Research data and generated artifacts
+/data/*
+!/data/manifests/
+/data/manifests/*
+
+# Reviewed small evidence and frozen research inputs only.
+!/data/manifests/archive_batch/
+!/data/manifests/archive_capacity/
+!/data/manifests/archive_inventory/
+!/data/manifests/archive_plan/
+!/data/manifests/contract_evidence/
+!/data/manifests/contract_identity_registry/
+!/data/manifests/contract_registry/
+!/data/manifests/coverage_loss/
+!/data/manifests/dev_rule_gaps/
+!/data/manifests/exchange_info/
+!/data/manifests/historical_rule_gate/
+!/data/manifests/identity_registry_build/
+!/data/manifests/normalization_batch/
+!/data/manifests/registry_coverage/
+!/data/manifests/registry_draft/
+!/data/manifests/research_input_audit/
+!/data/manifests/research_split/
+!/data/manifests/rule_evidence_intake/
+!/data/manifests/sensitivity_plan/
+!/data/manifests/universe_batch/
+/data/manifests/*/*
+!/data/manifests/*/*.json
+
+# One reviewed nested lifecycle pilot from P8.
+!/data/manifests/contract_evidence/ANTUSDT/
+/data/manifests/contract_evidence/ANTUSDT/*
+!/data/manifests/contract_evidence/ANTUSDT/pilot-2024-03.json
+
+# Batch receipts, daily snapshots and live preflight reports remain local.
+# A fresh preflight must not make the code worktree dirty by reporting on itself.
+artifacts/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

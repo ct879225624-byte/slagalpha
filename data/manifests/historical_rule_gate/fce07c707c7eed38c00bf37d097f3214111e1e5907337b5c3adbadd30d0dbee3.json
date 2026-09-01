@@ -1,0 +1,255 @@
+{
+  "blocked_count": 30,
+  "contract_registry_version": "registry-draft-f2a9370598caed227566b0c0903b215cd491aea45588d56e1dc3aea1b4e45ea0",
+  "eligible_count": 0,
+  "entries": [
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "1000PEPEUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "AAVEUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "ADAUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "AKEUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "BANKUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "BEATUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "BNBUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "BTCUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "COTIUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "DEXEUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "DOGEUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "ESPUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "ETHUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "HYPEUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "KAITOUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "KOMAUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "LINKUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "MMTUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "NEARUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "ONDOUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "ONUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "PAXGUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "PUMPUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "SOLUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "SUIUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "UAIUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "UNIUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "WLDUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "XRPUSDT"
+    },
+    {
+      "eligible": false,
+      "reason_codes": [
+        "CONTRACT_RULE_UNVERIFIED"
+      ],
+      "rule_source_ref": "exchangeInfo:9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+      "symbol": "ZECUSDT"
+    }
+  ],
+  "evaluated_at": "2026-07-31T00:15:00Z",
+  "member_count": 30,
+  "reason_counts": {
+    "CONTRACT_RULE_UNVERIFIED": 30
+  },
+  "report_hash": "fce07c707c7eed38c00bf37d097f3214111e1e5907337b5c3adbadd30d0dbee3",
+  "schema_version": "historical-rule-gate/0.1.0",
+  "universe_version": "67539b969558882f19eda7aaa83b08054a498efbb8ae28d0ad4dbbcd824f31c5"
+}

@@ -1,0 +1,372 @@
+{
+  "common_prefixes": [],
+  "fetched_at": "2026-08-28T07:22:44.566482Z",
+  "is_truncated": false,
+  "listing_hash": "3dc0df57c2deec2b9337ec2a8300361385e3950752bf5a9336c8bbc4b18a1d22",
+  "next_marker": null,
+  "objects": [
+    {
+      "etag": "f9685e46f55a1275e5bc8d5ff3ed6163",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2021-12.zip",
+      "last_modified": "2022-01-07T16:18:00Z",
+      "size": 5508
+    },
+    {
+      "etag": "c7f35ae11e5da263a2a6be6cd87aff23",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2021-12.zip.CHECKSUM",
+      "last_modified": "2022-01-07T16:18:00Z",
+      "size": 89
+    },
+    {
+      "etag": "d71e07d7921023332fe7be6c494689e1",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-01.zip",
+      "last_modified": "2023-12-18T13:44:17Z",
+      "size": 33174
+    },
+    {
+      "etag": "f9f45dc9ecf4ff6aa4adf94746d52fea",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-01.zip.CHECKSUM",
+      "last_modified": "2023-12-18T13:44:17Z",
+      "size": 89
+    },
+    {
+      "etag": "bd8bc20e2e02a6ed48595294ad8f4475",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-02.zip",
+      "last_modified": "2024-01-08T12:14:10Z",
+      "size": 29525
+    },
+    {
+      "etag": "bd190015407687e5aa171196592c0e15",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-02.zip.CHECKSUM",
+      "last_modified": "2024-01-08T12:14:10Z",
+      "size": 89
+    },
+    {
+      "etag": "53452218f41a24ae234dc8116fc33313",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-03.zip",
+      "last_modified": "2024-01-08T13:32:54Z",
+      "size": 31306
+    },
+    {
+      "etag": "a9e882e0d18084ebd2f6e0f7f8cfa211",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-03.zip.CHECKSUM",
+      "last_modified": "2024-01-08T13:32:54Z",
+      "size": 89
+    },
+    {
+      "etag": "c60ca593939278e091b28cb25a3233cc",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-04.zip",
+      "last_modified": "2024-01-08T14:17:00Z",
+      "size": 30095
+    },
+    {
+      "etag": "b907f648789ed1f62b0db8aa49719930",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-04.zip.CHECKSUM",
+      "last_modified": "2024-01-08T14:17:00Z",
+      "size": 89
+    },
+    {
+      "etag": "aa8a2bf1106c8d3729a14ad364991b61",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-05.zip",
+      "last_modified": "2024-08-20T18:09:36Z",
+      "size": 31601
+    },
+    {
+      "etag": "3c408124e55dde430f2cdaf3a0985930",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-05.zip.CHECKSUM",
+      "last_modified": "2024-08-20T18:09:36Z",
+      "size": 89
+    },
+    {
+      "etag": "57bbbaec4ac97f83c28a244721a749f4",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-06.zip",
+      "last_modified": "2023-12-20T14:51:43Z",
+      "size": 30237
+    },
+    {
+      "etag": "d59d49804d4e1cc92c837ab1f625dcd7",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-06.zip.CHECKSUM",
+      "last_modified": "2023-12-20T14:51:43Z",
+      "size": 89
+    },
+    {
+      "etag": "164acdf8250300865f0a81298eeff7de",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-07.zip",
+      "last_modified": "2023-09-21T06:13:54Z",
+      "size": 30153
+    },
+    {
+      "etag": "32938fd09351e9932a1ae62cf93e0a5d",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-07.zip.CHECKSUM",
+      "last_modified": "2023-09-21T06:13:54Z",
+      "size": 89
+    },
+    {
+      "etag": "11137fcff53cfaf2052e3006a7d04cf5",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-08.zip",
+      "last_modified": "2023-06-12T11:48:50Z",
+      "size": 30302
+    },
+    {
+      "etag": "005901aaec77f883579b32f9a1cc6deb",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-08.zip.CHECKSUM",
+      "last_modified": "2023-06-12T11:48:50Z",
+      "size": 89
+    },
+    {
+      "etag": "5d5b8f8fdcd8b17eab2916d7272e7243",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-09.zip",
+      "last_modified": "2022-10-26T14:11:19Z",
+      "size": 28967
+    },
+    {
+      "etag": "ffd1ac89ab93bd74182eac559e48db1f",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-09.zip.CHECKSUM",
+      "last_modified": "2022-10-26T14:11:19Z",
+      "size": 89
+    },
+    {
+      "etag": "e6755939ca2f0de1cb34823b3ab767a8",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-10.zip",
+      "last_modified": "2022-11-17T18:57:13Z",
+      "size": 29072
+    },
+    {
+      "etag": "55872c97368dff96b2e05ca4c3ae87cb",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-10.zip.CHECKSUM",
+      "last_modified": "2022-11-17T18:57:13Z",
+      "size": 89
+    },
+    {
+      "etag": "d0d51f451f830d8a993b954c68ab0892",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-11.zip",
+      "last_modified": "2022-12-25T20:56:55Z",
+      "size": 29460
+    },
+    {
+      "etag": "7700bfca40c32339959455da65a4b7dc",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-11.zip.CHECKSUM",
+      "last_modified": "2022-12-25T20:56:55Z",
+      "size": 89
+    },
+    {
+      "etag": "f891b6af718d273affc6f4719f4c0718",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-12.zip",
+      "last_modified": "2023-01-17T18:31:23Z",
+      "size": 30611
+    },
+    {
+      "etag": "fe835670087b5571e72ea6a9e48fb188",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2022-12.zip.CHECKSUM",
+      "last_modified": "2023-01-17T18:31:23Z",
+      "size": 89
+    },
+    {
+      "etag": "543c7e05194eeba6e04ab4bb22c47fee",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-01.zip",
+      "last_modified": "2023-02-17T16:28:44Z",
+      "size": 30733
+    },
+    {
+      "etag": "6f2456641d40bde160671d9b520d4d9f",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-01.zip.CHECKSUM",
+      "last_modified": "2023-02-17T16:28:44Z",
+      "size": 89
+    },
+    {
+      "etag": "02205db26a2e5b8db7dd32d36898c177",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-02.zip",
+      "last_modified": "2023-09-19T08:43:58Z",
+      "size": 27511
+    },
+    {
+      "etag": "18749992789e2583dbfbb9a959a8facc",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-02.zip.CHECKSUM",
+      "last_modified": "2023-09-19T08:43:58Z",
+      "size": 89
+    },
+    {
+      "etag": "170582166c8f4321a74c891756ac3e19",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-03.zip",
+      "last_modified": "2023-04-22T17:53:37Z",
+      "size": 29966
+    },
+    {
+      "etag": "3c87e47614782918f7b0086f92f3517f",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-03.zip.CHECKSUM",
+      "last_modified": "2023-04-22T17:53:37Z",
+      "size": 89
+    },
+    {
+      "etag": "1a42310a5405f6fabbb76cba4426ce3c",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-04.zip",
+      "last_modified": "2023-08-07T08:15:49Z",
+      "size": 30163
+    },
+    {
+      "etag": "8e5236f3ae40da1fcd63ac9c1496a5cb",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-04.zip.CHECKSUM",
+      "last_modified": "2023-08-07T08:15:49Z",
+      "size": 89
+    },
+    {
+      "etag": "eae16bd2cc05b43a348fe7a08ca6abd4",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-05.zip",
+      "last_modified": "2023-06-01T17:18:04Z",
+      "size": 31124
+    },
+    {
+      "etag": "40d790030c04f4eb10fae8ebb415ed4c",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-05.zip.CHECKSUM",
+      "last_modified": "2023-06-01T17:18:04Z",
+      "size": 89
+    },
+    {
+      "etag": "1249c8fc25f92d973edcf2937d047792",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-06.zip",
+      "last_modified": "2023-07-02T16:46:15Z",
+      "size": 30365
+    },
+    {
+      "etag": "a430f179ffb05f71c55c400cd3b0ac41",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-06.zip.CHECKSUM",
+      "last_modified": "2023-07-02T16:46:15Z",
+      "size": 89
+    },
+    {
+      "etag": "8c325ff1fada59a36d5faf4c867cded6",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-07.zip",
+      "last_modified": "2023-11-18T13:45:09Z",
+      "size": 30324
+    },
+    {
+      "etag": "304def23bbd4c9f106d40d19a7183217",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-07.zip.CHECKSUM",
+      "last_modified": "2023-11-18T13:45:09Z",
+      "size": 89
+    },
+    {
+      "etag": "319f31ed556ebd465e3bf73e1125727d",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-08.zip",
+      "last_modified": "2023-11-18T15:43:48Z",
+      "size": 30839
+    },
+    {
+      "etag": "fed1d27358d01246dcc1744d06454d02",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-08.zip.CHECKSUM",
+      "last_modified": "2023-11-18T15:43:48Z",
+      "size": 89
+    },
+    {
+      "etag": "0aba35fd5d76839e0b012a116123576d",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-09.zip",
+      "last_modified": "2023-11-18T15:54:43Z",
+      "size": 29021
+    },
+    {
+      "etag": "5e6b15ce40c4afad1956e6e4f589c6df",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-09.zip.CHECKSUM",
+      "last_modified": "2023-11-18T15:54:43Z",
+      "size": 89
+    },
+    {
+      "etag": "a69ff4e9ed636b59a9c15f98c3025227",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-10.zip",
+      "last_modified": "2023-11-18T18:11:10Z",
+      "size": 29460
+    },
+    {
+      "etag": "24db9619e4965360b6a8c56d8279aeec",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-10.zip.CHECKSUM",
+      "last_modified": "2023-11-18T18:11:10Z",
+      "size": 89
+    },
+    {
+      "etag": "cbc2532721a54f7115b1c4b811fbfd19",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-11.zip",
+      "last_modified": "2023-12-17T13:30:09Z",
+      "size": 28847
+    },
+    {
+      "etag": "3759318ac769f04165f36b956ffeb4e5",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-11.zip.CHECKSUM",
+      "last_modified": "2023-12-17T13:30:09Z",
+      "size": 89
+    },
+    {
+      "etag": "a9f619407dc9b7210fb18cca1360a95b",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-12.zip",
+      "last_modified": "2024-01-02T06:03:24Z",
+      "size": 29907
+    },
+    {
+      "etag": "f80425682e42381da76b493aeba988bc",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2023-12.zip.CHECKSUM",
+      "last_modified": "2024-01-02T06:03:24Z",
+      "size": 89
+    },
+    {
+      "etag": "a844858027d41bd3fd7bdae200445768",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-01.zip",
+      "last_modified": "2024-02-18T13:55:34Z",
+      "size": 29991
+    },
+    {
+      "etag": "ef41c460fd72521f702b9fa828437c31",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-01.zip.CHECKSUM",
+      "last_modified": "2024-02-18T13:55:34Z",
+      "size": 89
+    },
+    {
+      "etag": "8478a7f9694258cf718571fac6e82a4b",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-02.zip",
+      "last_modified": "2024-03-17T15:30:47Z",
+      "size": 28292
+    },
+    {
+      "etag": "f4aba142d2f021a06cae750439def227",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-02.zip.CHECKSUM",
+      "last_modified": "2024-03-17T15:30:47Z",
+      "size": 89
+    },
+    {
+      "etag": "838edd893d667085659f0905c2006c87",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-03.zip",
+      "last_modified": "2024-04-17T19:24:48Z",
+      "size": 30032
+    },
+    {
+      "etag": "8bbf6d71249d8e2781260d1ada3e18ae",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-03.zip.CHECKSUM",
+      "last_modified": "2024-04-17T19:24:48Z",
+      "size": 89
+    },
+    {
+      "etag": "32a6924f8c88f5fca45b802485c906f1",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-04.zip",
+      "last_modified": "2024-05-17T14:15:06Z",
+      "size": 5111
+    },
+    {
+      "etag": "3f8c37869bccfaae0323da9cdbd768ea",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-04.zip.CHECKSUM",
+      "last_modified": "2024-05-17T14:15:06Z",
+      "size": 89
+    },
+    {
+      "etag": "e4a9fdbe4b1f09e67bfb3ad59c1576ea",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-05.zip",
+      "last_modified": "2024-06-17T13:42:45Z",
+      "size": 4270
+    },
+    {
+      "etag": "ac8ff9d66f9c0a68a581fe29303534ea",
+      "key": "data/futures/um/monthly/klines/ANTUSDT/1h/ANTUSDT-1h-2024-05.zip.CHECKSUM",
+      "last_modified": "2024-06-17T13:42:45Z",
+      "size": 89
+    }
+  ],
+  "prefix": "data/futures/um/monthly/klines/ANTUSDT/1h/",
+  "schema_version": "archive-inventory/0.1.0",
+  "source_url": "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision"
+}

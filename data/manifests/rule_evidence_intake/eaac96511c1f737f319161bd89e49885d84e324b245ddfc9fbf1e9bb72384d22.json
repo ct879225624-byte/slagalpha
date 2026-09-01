@@ -1,0 +1,24 @@
+{
+  "blockers": [
+    "CONTINUITY_EVIDENCE_REQUIRED",
+    "SNAPSHOT_OUTSIDE_CLAIMED_INTERVAL"
+  ],
+  "continuity_actual_sha256": null,
+  "manual_review_checks": [
+    "SOURCE_AUTHENTICITY",
+    "HISTORICAL_CAPTURE_TIMESTAMP",
+    "INTERVAL_CONTINUITY",
+    "IDENTITY_LIFECYCLE_EVIDENCE",
+    "REGISTRY_INTERVAL_CONFLICTS"
+  ],
+  "mismatched_fields": [],
+  "registry_modified": false,
+  "report_hash": "eaac96511c1f737f319161bd89e49885d84e324b245ddfc9fbf1e9bb72384d22",
+  "research_authorized": false,
+  "schema_version": "rule-evidence-intake/0.1.0",
+  "snapshot_actual_sha256": "9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+  "status": "BLOCKED",
+  "submission_hash": "4e454adeccd985b9984539471689401699afce6fd9d4e253104e2fa88d4cd1f8",
+  "symbol": "BTCUSDT",
+  "verification_status": "UNVERIFIED"
+}

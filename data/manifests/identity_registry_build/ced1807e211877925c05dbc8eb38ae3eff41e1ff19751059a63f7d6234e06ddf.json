@@ -1,0 +1,13 @@
+{
+  "exchange_info_hash": "9e3c9ece9afe8e08fee0f24cc52c8a49ec82d23dfd02fe9b09fbb088d35aa058",
+  "registry_version": "identity-registry-739fa834132a23afa1b15213caed637b96b6ebf863914fd6a2a69a4e94b3bd36",
+  "report_hash": "ced1807e211877925c05dbc8eb38ae3eff41e1ff19751059a63f7d6234e06ddf",
+  "schema_version": "identity-registry-build/0.1.0",
+  "skipped_symbols": [
+    "DOSUSDT",
+    "FTTUSDT",
+    "RAYUSDT",
+    "SCUSDT"
+  ],
+  "verified_entry_count": 649
+}

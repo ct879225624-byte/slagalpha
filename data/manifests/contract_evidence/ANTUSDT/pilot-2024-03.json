@@ -1,0 +1,54 @@
+{
+  "schema_version": "delisted-contract-pilot/0.1.0",
+  "symbol": "ANTUSDT",
+  "pilot_period": "2024-03",
+  "verification_status": "UNVERIFIED",
+  "locked_research_eligible": false,
+  "verification_note": "Official delist time is verified, but an official onboard time was not established in P8.4. Archive first/last months are not lifecycle authority.",
+  "official_delist_evidence": {
+    "article_id": 195588,
+    "article_code": "ce74360a3fd444b2b35da7186f8dd0ad",
+    "title": "Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M ANTUSDT, DGBUSDT and CTKUSDT Perpetual Contracts",
+    "published_at": "2024-03-25T04:40:12.437Z",
+    "settlement_and_delist_at": "2024-04-01T09:00:00Z",
+    "source_url": "https://www.binance.com/bapi/composite/v1/public/cms/article/detail/query?articleCode=ce74360a3fd444b2b35da7186f8dd0ad",
+    "captured_response_sha256": "84608ac82a162cfa7175b9ac3dec48645a9a41a32384ad5bc2915b07ff76e32f"
+  },
+  "root_inventory": {
+    "raw_symbol_prefix_count": 986,
+    "listing_hash": "cc9b0202082a7170e50eed0d9e11918faca87b8b77d7db5beb666b07210f8032"
+  },
+  "intervals": {
+    "15m": {
+      "inventory_hash": "919c86c431edea47fa11a3cb9ed89c77366dc2f5ad2854aafa535ee2bb2dabf2",
+      "plan_hash": "390c593b5a263013d9b6f9278f30b6c39ab0a096a3f9562a6b0de533e1bbf33b",
+      "source_sha256": "aacf5c6187914b457218ed6aea04b3590c17e28f4c88f40be28f0a7608fb23af",
+      "normalized_content_hash": "852706f67ae00ddd508258c5da5d19b463d0e16c08245923ed137a911c28cf9e",
+      "rows": 2976
+    },
+    "1h": {
+      "inventory_hash": "3dc0df57c2deec2b9337ec2a8300361385e3950752bf5a9336c8bbc4b18a1d22",
+      "plan_hash": "866d04f0319d6fda602df115d14763b88d60bf6550fd39f728d59769a3c1b98a",
+      "source_sha256": "141d728cf1ad36d1cfd444c92eced600a04e62386f1608373ce8bf09c5868309",
+      "normalized_content_hash": "7382d4424f12351190fd13f18f0cf3b71246da5ad443eb714ac610bf2d770f4f",
+      "rows": 744
+    },
+    "4h": {
+      "inventory_hash": "4cb73f598ea60d0a67138e3354d2f2d4a37059bfa54e373b737bac9988e27cf9",
+      "plan_hash": "bf8818ed0403261fdb812be85afe08e34b2457829488c29c919f6b4bc220e952",
+      "source_sha256": "04d5c12fdb5217918bcc6f5e1826398831a7dc9c223aeec64633d04bb385693e",
+      "normalized_content_hash": "92fb19d5ae9af57d95d673ed72adca13bb2cc6e83e9e42a62f08531408d5f668",
+      "rows": 186
+    },
+    "1d": {
+      "inventory_hash": "711975a325a9a7ce7a27e30197655201ea39af26b15d02baac73195fe1c26088",
+      "plan_hash": "a759141bf96941abd6eedf3b915f9cc9f9ab11b557f6c82699c1800d7d002362",
+      "source_sha256": "57a6495cfa4b8c384962cdc6a57760b11ddacbaadb208c09c00fb14c458755ef",
+      "normalized_content_hash": "126e2333e31a5cd2b1feaf9a9cb170c3d1a11a94d8c849930f5fb0c8a5b7a4ec",
+      "rows": 31
+    }
+  },
+  "total_rows": 3937,
+  "raw_zip_bytes": 150300,
+  "normalized_parquet_bytes": 334397
+}

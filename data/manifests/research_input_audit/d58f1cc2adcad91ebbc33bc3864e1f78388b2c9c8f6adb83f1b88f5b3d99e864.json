@@ -1,0 +1,61 @@
+{
+  "contract_registry_version": "registry-draft-f2a9370598caed227566b0c0903b215cd491aea45588d56e1dc3aea1b4e45ea0",
+  "daily_snapshot_hash": "2ae73f816286e7932f88d2e7c8859a3c5ad8146df4b0ae59dc242faaae1412f8",
+  "deferred_checks": [
+    "Generate P4-P6 signals only after historical rule member-days are available",
+    "Download 1m/Funding/Aggregate Trades only for accepted replay requests",
+    "Do not consume LOCKED_TEST before a frozen ParameterVersion exists"
+  ],
+  "locked_test_consumed": false,
+  "overall_readiness": "BLOCKED",
+  "report_hash": "d58f1cc2adcad91ebbc33bc3864e1f78388b2c9c8f6adb83f1b88f5b3d99e864",
+  "roles": [
+    {
+      "blockers": [
+        "NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS"
+      ],
+      "expected_day_count": 548,
+      "member_day_count": 16440,
+      "readiness": "BLOCKED",
+      "role": "DEV",
+      "rule_blocked_member_day_count": 16440,
+      "rule_eligible_member_day_count": 0,
+      "rule_reason_counts": {
+        "CONTRACT_RULE_UNVERIFIED": 16440
+      },
+      "snapshot_day_count": 548
+    },
+    {
+      "blockers": [
+        "NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS"
+      ],
+      "expected_day_count": 274,
+      "member_day_count": 8220,
+      "readiness": "BLOCKED",
+      "role": "VALIDATION",
+      "rule_blocked_member_day_count": 8220,
+      "rule_eligible_member_day_count": 0,
+      "rule_reason_counts": {
+        "CONTRACT_RULE_UNVERIFIED": 8220
+      },
+      "snapshot_day_count": 274
+    },
+    {
+      "blockers": [
+        "NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS"
+      ],
+      "expected_day_count": 274,
+      "member_day_count": 8220,
+      "readiness": "BLOCKED",
+      "role": "LOCKED_TEST",
+      "rule_blocked_member_day_count": 8220,
+      "rule_eligible_member_day_count": 0,
+      "rule_reason_counts": {
+        "CONTRACT_RULE_UNVERIFIED": 8220
+      },
+      "snapshot_day_count": 274
+    }
+  ],
+  "schema_version": "research-input-audit/0.1.0",
+  "split_hash": "b262a24e59f69d7887e8bd5805eb9f11c4fcaef6611c8cd7480d5a2ca89027ca"
+}

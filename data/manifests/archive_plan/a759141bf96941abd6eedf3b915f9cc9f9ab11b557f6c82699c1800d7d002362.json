@@ -1,0 +1,18 @@
+{
+  "available": [
+    {
+      "interval": "1d",
+      "month": 3,
+      "symbol": "ANTUSDT",
+      "year": 2024
+    }
+  ],
+  "end_period_exclusive": "2024-04",
+  "interval": "1d",
+  "inventory_hash": "711975a325a9a7ce7a27e30197655201ea39af26b15d02baac73195fe1c26088",
+  "missing_periods": [],
+  "plan_hash": "a759141bf96941abd6eedf3b915f9cc9f9ab11b557f6c82699c1800d7d002362",
+  "schema_version": "monthly-archive-plan/0.1.0",
+  "start_period": "2024-03",
+  "symbol": "ANTUSDT"
+}

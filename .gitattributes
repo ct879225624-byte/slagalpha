@@ -1,0 +1,4 @@
+# Frozen evidence includes raw-byte hashes. Preserve this baseline exactly,
+# including JSON manifests, strategy documentation and the environment lock.
+# New/edited text still follows .editorconfig; do not normalize existing evidence.
+* -text

@@ -1,0 +1,123 @@
+{
+  "complete": false,
+  "dataset_content_hash": "154f1980d63e5342cb3408ea30dab3e6f84da43993a4fa5e073d84e56599c430",
+  "failed_count": 27,
+  "failures": [
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [1440]",
+      "identity": "AERGOUSDT/15m/2025-04"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [360]",
+      "identity": "AERGOUSDT/1h/2025-04"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [90]",
+      "identity": "AERGOUSDT/4h/2025-04"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [1824]",
+      "identity": "AIAUSDT/15m/2026-01"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [456]",
+      "identity": "AIAUSDT/1h/2026-01"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [114]",
+      "identity": "AIAUSDT/4h/2026-01"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [2784]",
+      "identity": "CTKUSDT/15m/2025-04"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [696]",
+      "identity": "CTKUSDT/1h/2025-04"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [174]",
+      "identity": "CTKUSDT/4h/2025-04"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [1440]",
+      "identity": "CVCUSDT/15m/2025-05"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [360]",
+      "identity": "CVCUSDT/1h/2025-05"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [90]",
+      "identity": "CVCUSDT/4h/2025-05"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [2112]",
+      "identity": "CVXUSDT/15m/2025-07"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [528]",
+      "identity": "CVXUSDT/1h/2025-07"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [132]",
+      "identity": "CVXUSDT/4h/2025-07"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [2112]",
+      "identity": "LITUSDT/15m/2025-12"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [528]",
+      "identity": "LITUSDT/1h/2025-12"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [132]",
+      "identity": "LITUSDT/4h/2025-12"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [2400]",
+      "identity": "MAVIAUSDT/15m/2025-03"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [600]",
+      "identity": "MAVIAUSDT/1h/2025-03"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [150]",
+      "identity": "MAVIAUSDT/4h/2025-03"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [864]",
+      "identity": "PUMPUSDT/15m/2025-07"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [216]",
+      "identity": "PUMPUSDT/1h/2025-07"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [54]",
+      "identity": "PUMPUSDT/4h/2025-07"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [2112]",
+      "identity": "SLPUSDT/15m/2025-07"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [528]",
+      "identity": "SLPUSDT/1h/2025-07"
+    },
+    {
+      "error": "CandleGapError: non-contiguous candle grid near row positions [132]",
+      "identity": "SLPUSDT/4h/2025-07"
+    }
+  ],
+  "normalized_count": 70612,
+  "normalized_parquet_bytes": 5434152441,
+  "normalized_row_count": 69189525,
+  "plan_content_hash": "cb3aa1a9c634e8bd84202347b50b0b3ea92722c7c6cf7d9a0a8ce6f60c21363d",
+  "requested_count": 73340,
+  "result_hash": "c86dd5d2fa055d5bb02364c8abfa1d5e81998bccdfabfc0c1d2e9554832955d2",
+  "reused_count": 2701,
+  "schema_version": "normalization-batch/0.1.0"
+}
