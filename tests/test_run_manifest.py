@@ -81,7 +81,9 @@ def test_p7_result_round_trip_binds_exact_result(tmp_path: Path) -> None:
     {"environment_lock_hash": ""}, {"archive_manifest_hash": "missing"},
     {"universe_versions": []}, {"candle_dataset_hashes": ["c" * 64, "c" * 64]},
     {"schema_versions": ["z", "a"]}, {"command_arguments": []},
-    {"parameter_version": " "}, {"random_seed": True}, {"random_seed": -1},
+    {"parameter_version": " "}, {"parameter_version": "fixture:parameters"},
+    {"parameter_version": "parameters/0.1.0:not-a-hash"},
+    {"random_seed": True}, {"random_seed": -1},
 ])
 def test_incomplete_or_nonreproducible_formal_inputs_fail_closed(updates: dict[str, Any]) -> None:
     with pytest.raises(ValueError):

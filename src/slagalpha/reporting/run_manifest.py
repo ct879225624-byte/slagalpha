@@ -85,6 +85,15 @@ class DevRunInputs(BaseModel):
             raise ValueError("version references must be non-empty without surrounding whitespace")
         return value
 
+    @field_validator("parameter_version")
+    @classmethod
+    def validate_parameter_version(cls, value: str) -> str:
+        prefix = "parameters/0.1.0:"
+        if not value.startswith(prefix):
+            raise ValueError("parameter_version must use parameters/0.1.0:<sha256>")
+        _sha256(value.removeprefix(prefix))
+        return value
+
     @field_validator(
         "archive_manifest_hash", "environment_lock_hash", "split_hash", "sensitivity_plan_hash"
     )

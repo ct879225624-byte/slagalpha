@@ -36,6 +36,7 @@ dist/
 !/data/manifests/historical_rule_gate/
 !/data/manifests/identity_registry_build/
 !/data/manifests/normalization_batch/
+!/data/manifests/parameter_version/
 !/data/manifests/registry_coverage/
 !/data/manifests/registry_draft/
 !/data/manifests/research_input_audit/
