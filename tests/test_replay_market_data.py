@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 from slagalpha.backtest.analytics import FundingDataset
 from slagalpha.data.klines import CandleValidationError
+from slagalpha.reporting.run_manifest import canonical_json_bytes
 from slagalpha.research.replay_inputs import (
     DevReplayDataRequest,
     ReplayDataInputError,
@@ -219,3 +220,57 @@ def test_unsafe_response_paths_are_rejected(tmp_path: Path, relative: str) -> No
     payload["relative_path"] = relative
     with pytest.raises(ValidationError):
         ReplayRestResponse.model_validate(payload)
+
+
+def test_single_response_spanning_month_boundary_preserves_exact_grid(tmp_path: Path) -> None:
+    # A synthetic serialized request tests parsing only, not upstream authorization.
+    original = _request()
+    shift = datetime(2024, 1, 31, 23, 45, tzinfo=UTC) - original.start
+    payload = original.model_dump(mode="json", exclude={"request_hash"})
+    for field in ("start", "end_exclusive"):
+        payload[field] = (getattr(original, field) + shift).isoformat().replace("+00:00", "Z")
+    for field in ("confirmation_close", "expires_at"):
+        payload["request"]["armed"][field] = (
+            getattr(original.request.armed, field) + shift
+        ).isoformat().replace("+00:00", "Z")
+    request = DevReplayDataRequest.model_validate({
+        **payload, "request_hash": hashlib.sha256(canonical_json_bytes(payload)).hexdigest(),
+    })
+    response = _response(tmp_path, request, _klines(request))
+    artifact, candles = build_replay_market_data_artifact(
+        project_dir=tmp_path, request=request, role="CANDLE_ONE_MINUTE", responses=(response,),
+    )
+    assert isinstance(candles, pd.DataFrame)
+    assert artifact.record_count == 526
+    assert candles["open_time"].iloc[0] == request.start
+    assert candles["close_time_exclusive"].iloc[-1] == request.end_exclusive
+    assert set(candles["open_time"].dt.month) == {1, 2}
+
+
+def test_funding_query_boundary_event_is_kept_once(tmp_path: Path) -> None:
+    request = _request()
+    rows = _funding(request)
+    boundary = rows[0]["fundingTime"]
+    first = _response(
+        tmp_path, request, [], name="funding-before.json", endpoint="/fapi/v1/fundingRate",
+        end_ms=boundary - 1,
+    )
+    second = _response(
+        tmp_path, request, rows, name="funding-after.json", endpoint="/fapi/v1/fundingRate",
+        start_ms=boundary,
+    )
+    artifact, data = build_replay_market_data_artifact(
+        project_dir=tmp_path, request=request, role="FUNDING", responses=(first, second),
+    )
+    assert isinstance(data, FundingDataset)
+    assert artifact.record_count == len(data.observations) == 1
+
+
+def test_response_bound_to_wrong_symbol_is_rejected_before_file_read(tmp_path: Path) -> None:
+    request = _request()
+    response = _response(tmp_path, request, []).model_copy(update={"symbol": "OTHERUSDT"})
+    with pytest.raises(ReplayDataInputError, match="exactly partition"):
+        build_replay_market_data_artifact(
+            project_dir=tmp_path / "nonexistent", request=request,
+            role="CANDLE_ONE_MINUTE", responses=(response,),
+        )

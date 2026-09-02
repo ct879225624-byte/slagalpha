@@ -63,3 +63,14 @@ Funding：使用返回结算时刻构造已有 P7 `FundingDataset`，不硬编�
 
 目前测试响应全部为合成 fixtures；没有抓取、落地或批准任何真实 replay 输入。
 正式运行的 1m/Funding 聚合输入门禁尚未接入这些单请求工件，仍保持阻断。
+
+## 4. 同一请求的联合加载
+
+`research/replay_loading.py::load_bound_replay_inputs` 先重新执行请求的原始来源绑定检查，
+然后核对两类工件角色与 request hash，最后重读原始文件并重新规范化。
+原始规则变回 UNVERIFIED、计划改变、角色互换或跨请求拼接都在读取市场数据前拒绝。
+返回现有 P7 可用的 DataFrame 与 FundingDataset，不调用 replay/scheduler，也不更改
+全局研究授权。单请求加载通过不能证明整个 DEV 的信号集合或参数执行已经完成。
+
+合成端到端测试确认正常 TP2 与最后可能入场后的 TIME_EXIT 均可闭合，并接入原 P7
+Funding 计算；这是测试代码显式调用 P7，不是加载器自动执行，更不是策略验收结果。

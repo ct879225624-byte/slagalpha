@@ -285,6 +285,8 @@ def load_replay_market_data_artifact(
     *, project_dir: Path, request: DevReplayDataRequest, artifact: ReplayMarketDataArtifact,
 ) -> pd.DataFrame | FundingDataset:
     artifact = ReplayMarketDataArtifact.model_validate(artifact.model_dump(mode="json"))
+    if artifact.request_hash != request.request_hash:
+        raise ReplayDataInputError("market-data artifact belongs to a different request")
     observed, data = build_replay_market_data_artifact(
         project_dir=project_dir, request=request, role=artifact.role, responses=artifact.responses,
     )
