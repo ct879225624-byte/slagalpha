@@ -59,6 +59,10 @@ SELECTIONS = (
      "data/manifests/archive_batch/"
      "9daba9a0aa2e4a61e3bb568cecec4e2c84166758dc24849ab974f2c4545edc0d.json",
      "1a072a32566cc6f55e512484352e0467cd29b5e24ba28f8ac342b27d7d1b0bd1"),
+    (InputArtifactRole.NORMALIZATION_GAP_AUDIT,
+     "data/manifests/normalization_gap_audit/"
+     "9fdfe51b0a209451b2bae612f427ba33702b8225b71b03211372f0c986c1a7fc.json",
+     "3f1a0c3669a9f527d93d1a9df46707ac1cd69573a81a213286a4376d8d9b1479"),
 )
 
 

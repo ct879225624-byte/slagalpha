@@ -5,11 +5,15 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
+from slagalpha.reporting.run_manifest import canonical_json_bytes
 from slagalpha.research.execution_inputs import (
+    REQUIRED_INPUT_ROLES,
+    DevExecutionInputReport,
     InputArtifactRole,
     InputArtifactSelection,
     inspect_dev_execution_inputs,
@@ -135,3 +139,83 @@ def test_semantic_report_round_trip_and_tamper_rejection(tmp_path: Path) -> None
     payload["research_authorized"] = True
     with pytest.raises(ValidationError):
         DevExecutionSemanticReport.model_validate(payload)
+
+
+def _real_gap_selections(
+    root: Path, *, overrides: dict[str, Any] | None = None,
+) -> tuple[SensitivityPlan, DevParameterVersion, tuple[InputArtifactSelection, ...]]:
+    manifests = Path("data/manifests")
+    plan = SensitivityPlan.model_validate_json((manifests / "sensitivity_plan" /
+        "c41e2771a8ca526e4c8ffa09a863b078e300fc7332b9090461e11e1c1f2b5ff9.json").read_bytes())
+    parameter = build_dev_parameter_version(
+        plan=plan, candidate_hash=plan.candidates[0].candidate_hash,
+    )
+    files = (
+        (InputArtifactRole.RESEARCH_SPLIT, "research_split",
+         "b262a24e59f69d7887e8bd5805eb9f11c4fcaef6611c8cd7480d5a2ca89027ca"),
+        (InputArtifactRole.UNIVERSE, "universe_batch",
+         "1b995e73691ae8b034f429677781e727716fb2909537f1f7643f04ec5cbae520"),
+        (InputArtifactRole.CANDLE_MULTI_TIMEFRAME, "normalization_batch",
+         "c86dd5d2fa055d5bb02364c8abfa1d5e81998bccdfabfc0c1d2e9554832955d2"),
+        (InputArtifactRole.NORMALIZATION_GAP_AUDIT, "normalization_gap_audit",
+         "9fdfe51b0a209451b2bae612f427ba33702b8225b71b03211372f0c986c1a7fc"),
+    )
+    selections = []
+    for role, folder, digest in files:
+        content = (manifests / folder / f"{digest}.json").read_bytes()
+        if role is InputArtifactRole.NORMALIZATION_GAP_AUDIT and overrides:
+            payload = json.loads(content)
+            payload.update(overrides)
+            del payload["report_hash"]
+            payload["report_hash"] = hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
+            content = canonical_json_bytes(payload)
+        relative = f"{folder}.json"
+        (root / relative).write_bytes(content)
+        selections.append(InputArtifactSelection(
+            role=role, relative_path=relative,
+            expected_sha256=hashlib.sha256(content).hexdigest(),
+        ))
+    return plan, parameter, tuple(selections)
+
+
+def test_bound_gap_diagnostics_add_recursive_blockers_without_relaxing_gate(tmp_path: Path) -> None:
+    plan, parameter, selections = _real_gap_selections(tmp_path)
+    content = inspect_dev_execution_inputs(
+        project_dir=tmp_path, plan=plan, parameter=parameter, selections=selections,
+    )
+    report = inspect_dev_execution_semantics(
+        project_dir=tmp_path, plan=plan, parameter=parameter, content_report=content,
+    )
+    assert sum(code.startswith("RUN_INPUT_GAP_AUDIT:") for code in report.blockers) == 18
+    assert "RUN_INPUT_SEMANTIC_INCOMPLETE_OR_MISMATCH_CANDLE_MULTI_TIMEFRAME" in report.blockers
+    assert report.research_authorized is False
+    assert InputArtifactRole.NORMALIZATION_GAP_AUDIT not in REQUIRED_INPUT_ROLES
+
+
+@pytest.mark.parametrize("overrides", [
+    {"normalization_result_hash": "a" * 64},
+    {"daily_snapshot_hash": "a" * 64},
+    {"snapshot_count": 1},
+    {"finite_lookback_bars": 1},
+])
+def test_gap_diagnostics_from_other_inputs_cannot_be_cross_bound(
+    tmp_path: Path, overrides: dict[str, Any],
+) -> None:
+    plan, parameter, selections = _real_gap_selections(tmp_path, overrides=overrides)
+    content = inspect_dev_execution_inputs(
+        project_dir=tmp_path, plan=plan, parameter=parameter, selections=selections,
+    )
+    report = inspect_dev_execution_semantics(
+        project_dir=tmp_path, plan=plan, parameter=parameter, content_report=content,
+    )
+    assert "RUN_INPUT_SEMANTIC_MISMATCH_NORMALIZATION_GAP_AUDIT" in report.blockers
+
+
+def test_saved_reports_without_optional_gap_diagnostics_remain_valid() -> None:
+    manifests = Path("data/manifests")
+    content = DevExecutionInputReport.model_validate_json((manifests / "dev_execution_inputs" /
+        "c3a6db4305badba848fb9b804f662052f3af7cd002e3f3270e10899354d026c0.json").read_bytes())
+    semantic = DevExecutionSemanticReport.model_validate_json((
+        manifests / "dev_execution_semantics" /
+        "00104d25f2d297d2160a0ee471c1ac29fab4713744bdd8582e0b80a82e5a23ad.json").read_bytes())
+    assert content.status == semantic.status == "BLOCKED"

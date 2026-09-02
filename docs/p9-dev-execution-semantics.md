@@ -15,6 +15,9 @@
 - 多周期 normalization batch 必须 complete，dataset hash 与 Universe 输入一致。
 - archive batch 必须 complete，capacity plan hash 与 normalization 输入一致。
 - 若提供排除表，其版本必须与 Universe batch 一致。
+- 若提供缺口审计，其 normalization hash、daily snapshot hash、快照数、失败文件数、
+  失败 identity 和有限回看参数必须与当前输入一致；递归依赖阻断原样传播。
+  审计只补充诊断，不解除 complete 要求；未提供它的旧冻结报告仍可读取。
 
 目前尚无正式 1m、Funding 和依赖工件 manifest schema；即使以后只提供任意文件并通过
 字节哈希，这三类也会因缺少语义验证器继续失败关闭。Aggregate Trades 可选，但一旦声明
@@ -30,7 +33,7 @@
 
 报告哈希：
 
-`00104d25f2d297d2160a0ee471c1ac29fab4713744bdd8582e0b80a82e5a23ad`
+`9f475033bd194958400de5209a35d3de6f5491560e5e05c26260cfcb6b9d169e`
 
 10 类通过解析与交叉引用：Archive、合约规则注册表、环境锁、显式空排除表、参数版本、
 输入审计、split、敏感度计划、策略规则和 Universe。
@@ -45,3 +48,7 @@
 报告还保留历史规则 0 个合格成员日的既有阻断。状态为 `BLOCKED`，固定
 `research_authorized=false`、`strategy_executed=false`、`locked_test_consumed=false`。
 这不是策略失败，也不改变 P9 1/4 的完成口径。
+
+当前附加诊断中有 18 个失败文件的递归历史依赖未解决（全时期范围），见
+`docs/p9-normalization-gap-audit.md`。这是保守数据阻断，不能把有限窗口无交集解释为 ATR
+历史已经完整，也不能当作 DEV 交易结果。

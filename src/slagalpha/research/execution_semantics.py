@@ -22,6 +22,10 @@ from slagalpha.research.execution_inputs import (
     VerifiedInputArtifact,
     inspect_dev_execution_inputs,
 )
+from slagalpha.research.normalization_gaps import (
+    FINITE_LOOKBACK_BARS,
+    NormalizationGapAuditReport,
+)
 from slagalpha.research.parameters import (
     DevParameterVersion,
     require_parameter_plan_binding,
@@ -240,6 +244,26 @@ def inspect_dev_execution_semantics(
             validated.add(InputArtifactRole.CANDLE_MULTI_TIMEFRAME)
         else:
             blockers.append("RUN_INPUT_SEMANTIC_INCOMPLETE_OR_MISMATCH_CANDLE_MULTI_TIMEFRAME")
+
+    gap_audit = parse(InputArtifactRole.NORMALIZATION_GAP_AUDIT, NormalizationGapAuditReport)
+    if gap_audit is not None:
+        gap_matches = (
+            normalization is not None and universe is not None and split is not None
+            and gap_audit.normalization_result_hash == normalization.result_hash
+            and gap_audit.daily_snapshot_hash == universe.daily_snapshot_hash
+            and gap_audit.daily_snapshot_hash == split.daily_snapshot_hash
+            and gap_audit.snapshot_count == universe.expected_count
+            and gap_audit.failure_file_count == normalization.failed_count
+            and gap_audit.finite_lookback_bars == FINITE_LOOKBACK_BARS
+            and {item.evidence.identity for item in gap_audit.dependencies}.issubset(
+                {item.identity for item in normalization.failures}
+            )
+        )
+        if not gap_matches:
+            blockers.append("RUN_INPUT_SEMANTIC_MISMATCH_NORMALIZATION_GAP_AUDIT")
+        else:
+            blockers.extend(f"RUN_INPUT_GAP_AUDIT:{code}" for code in gap_audit.blockers)
+        # Diagnostic evidence never overrides the complete-normalization requirement.
 
     archive = parse(InputArtifactRole.ARCHIVE_MANIFEST, ArchiveBatchResult)
     if archive is not None:

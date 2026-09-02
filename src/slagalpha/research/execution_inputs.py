@@ -36,10 +36,13 @@ class InputArtifactRole(StrEnum):
     STRATEGY_RULES = "STRATEGY_RULES"
     UNIVERSE = "UNIVERSE"
     AGGREGATE_TRADES = "AGGREGATE_TRADES"
+    NORMALIZATION_GAP_AUDIT = "NORMALIZATION_GAP_AUDIT"
 
 
 REQUIRED_INPUT_ROLES = tuple(sorted(
-    (role for role in InputArtifactRole if role is not InputArtifactRole.AGGREGATE_TRADES),
+    (role for role in InputArtifactRole if role not in (
+        InputArtifactRole.AGGREGATE_TRADES, InputArtifactRole.NORMALIZATION_GAP_AUDIT,
+    )),
     key=lambda role: role.value,
 ))
 
