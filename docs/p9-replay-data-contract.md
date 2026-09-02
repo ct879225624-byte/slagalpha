@@ -92,3 +92,7 @@ Funding 计算；这是测试代码显式调用 P7，不是加载器自动执行
 ```
 
 当前仍为 P9 输入准备；整体 9/14（约 64%）、P9 1/4，不统计为策略研究通过。
+
+后续已加入扫描义务、逐日扫描声明与完整请求集合绑定、全请求 1m/Funding 配对复验。
+接口、最新测试和未验证来源边界见 `docs/p9-scan-request-set-contract.md`。
+总门禁可识别新集合报告，但仍要求 `REQUEST_SET_SOURCE_REVALIDATION_REQUIRED`，不授权研究。

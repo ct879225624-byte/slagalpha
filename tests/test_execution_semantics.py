@@ -24,9 +24,11 @@ from slagalpha.research.execution_semantics import (
     write_dev_execution_semantic_report,
 )
 from slagalpha.research.parameters import DevParameterVersion, build_dev_parameter_version
+from slagalpha.research.request_set_market_data import verify_dev_request_set_market_data
 from slagalpha.research.sensitivity import SensitivityPlan
 from test_dependency_artifacts import LOCK, _manifest, _wheel
 from test_replay_loading import _fixture as _replay_fixture
+from test_request_set_market_data import _market_set_context
 from test_sensitivity_plan import _audit, _plan, _split
 
 
@@ -284,4 +286,43 @@ def test_single_replay_artifact_cannot_claim_full_dev_coverage(
     reason = "MISMATCH" if mismatched_role else "REQUEST_SET_COVERAGE_REQUIRED"
     assert f"RUN_INPUT_SEMANTIC_{reason}_CANDLE_ONE_MINUTE" in report.blockers
     assert InputArtifactRole.CANDLE_ONE_MINUTE in report.deferred_roles
+    assert report.research_authorized is False
+
+
+@pytest.mark.parametrize("role", [InputArtifactRole.CANDLE_ONE_MINUTE, InputArtifactRole.FUNDING])
+@pytest.mark.parametrize("case", ["valid", "missing_raw", "invalid_hash", "forged_authority"])
+def test_aggregate_receipt_never_replaces_live_source_revalidation(
+    tmp_path: Path, role: InputArtifactRole, case: str,
+) -> None:
+    context = _market_set_context(tmp_path)
+    receipt = verify_dev_request_set_market_data(**context)
+    plan, parameter, selections = _core_fixture(tmp_path)
+    payload = receipt.model_dump(mode="json")
+    if case == "missing_raw":
+        (tmp_path / "minutes-1.json").unlink()
+    elif case == "invalid_hash":
+        payload["report_hash"] = "0" * 64
+    elif case == "forged_authority":
+        payload["research_authorized"] = True
+        payload.pop("report_hash")
+        payload["report_hash"] = hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
+    content_bytes = canonical_json_bytes(payload)
+    relative = "inputs/aggregate-replay.json"
+    (tmp_path / relative).write_bytes(content_bytes)
+    selections = (*selections, InputArtifactSelection(
+        role=role, relative_path=relative,
+        expected_sha256=hashlib.sha256(content_bytes).hexdigest(),
+    ))
+    content = inspect_dev_execution_inputs(
+        project_dir=tmp_path, plan=plan, parameter=parameter, selections=selections,
+    )
+    report = inspect_dev_execution_semantics(
+        project_dir=tmp_path, plan=plan, parameter=parameter, content_report=content,
+    )
+    reason = ("REQUEST_SET_SOURCE_REVALIDATION_REQUIRED" if case in ("valid", "missing_raw")
+              else "INVALID")
+    assert f"RUN_INPUT_SEMANTIC_{reason}_{role.value}" in report.blockers
+    assert role in report.deferred_roles
+    assert role not in report.validated_roles
+    assert report.status == "BLOCKED"
     assert report.research_authorized is False

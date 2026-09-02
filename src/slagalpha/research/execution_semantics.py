@@ -6,7 +6,7 @@ import hashlib
 from pathlib import Path
 from typing import Any, Literal, Self, TypeVar
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, TypeAdapter, model_validator
 
 from slagalpha.data.archive_batch import ArchiveBatchResult
 from slagalpha.data.normalization_batch import NormalizationBatchResult
@@ -35,6 +35,7 @@ from slagalpha.research.parameters import (
     require_parameter_plan_binding,
 )
 from slagalpha.research.replay_market_data import ReplayMarketDataArtifact
+from slagalpha.research.request_set_market_data import DevRequestSetMarketDataReport
 from slagalpha.research.sensitivity import SensitivityPlan
 from slagalpha.research.splits import (
     DatasetRole,
@@ -307,13 +308,27 @@ def inspect_dev_execution_semantics(
         InputArtifactRole.CANDLE_ONE_MINUTE,
         InputArtifactRole.FUNDING,
     ):
-        replay_data = parse(role, ReplayMarketDataArtifact)
-        if replay_data is not None:
-            if replay_data.role != role.value:
-                blockers.append(f"RUN_INPUT_SEMANTIC_MISMATCH_{role.value}")
-            else:
-                # One bounded request never establishes the full DEV request set's coverage.
-                blockers.append(f"RUN_INPUT_SEMANTIC_REQUEST_SET_COVERAGE_REQUIRED_{role.value}")
+        replay_artifact = one(role)
+        if replay_artifact is None:
+            continue
+        try:
+            replay_data: ReplayMarketDataArtifact | DevRequestSetMarketDataReport = TypeAdapter(
+                ReplayMarketDataArtifact | DevRequestSetMarketDataReport
+            ).validate_json(_read_verified(project_dir, replay_artifact))
+        except (OSError, ValueError):
+            blockers.append(f"RUN_INPUT_SEMANTIC_INVALID_{role.value}")
+            continue
+        if isinstance(replay_data, DevRequestSetMarketDataReport):
+            # A saved receipt alone cannot re-establish the current full source chain,
+            # nor does it prove that its scan declarations came from a verified strategy run.
+            blockers.append(
+                f"RUN_INPUT_SEMANTIC_REQUEST_SET_SOURCE_REVALIDATION_REQUIRED_{role.value}"
+            )
+        elif replay_data.role != role.value:
+            blockers.append(f"RUN_INPUT_SEMANTIC_MISMATCH_{role.value}")
+        else:
+            # One bounded request never establishes the full DEV request set's coverage.
+            blockers.append(f"RUN_INPUT_SEMANTIC_REQUEST_SET_COVERAGE_REQUIRED_{role.value}")
     if one(InputArtifactRole.AGGREGATE_TRADES) is not None:
         blockers.append("RUN_INPUT_SEMANTIC_VALIDATOR_MISSING_AGGREGATE_TRADES")
 
