@@ -89,10 +89,14 @@ DEV RunManifest、不可覆盖的结果保存和只读前检也已实现，见
 `docs/p9-parameter-version-contract.md`。这不代表选择了最优参数；正式执行器仍需验证全部
 运行输入并保留历史规则阻断。
 
-正式 DEV 文件内容哈希门禁也已实现，真实报告验证 10 类既有工件，明确缺少 1m、
-Funding、排除表和依赖工件，见 `docs/p9-dev-execution-inputs.md`。manifest 的业务完整性
+正式 DEV 文件内容哈希门禁也已实现，当前真实报告验证 12 类必需工件和 1 份附加诊断，
+仍缺少 1m、Funding，见 `docs/p9-dev-execution-inputs.md`。manifest 的业务完整性
 和区间交叉引用门禁现也已实现；真实报告另确认多周期 normalization batch 不完整，见
 `docs/p9-dev-execution-semantics.md`。
 
 Universe 引用的零条目 `empty-ledger/0.1.0` 现已保存为独立内容寻址工件并通过版本核对，
 见 `docs/p9-exclusion-ledger-artifact.md`。这只是补齐既有输入溯源，没有新增排除规则。
+
+现有本地环境的 29 个 wheel 工件也已按哈希冻结并完成离线 dry-run，见
+`docs/p9-dependency-artifacts.md`。多周期缺口审计没有以有限窗口替代递归 ATR 依赖，
+仍然失败关闭。2026-09-02 续接顺序见 `docs/development-checkpoint-2026-09-02.md`。
