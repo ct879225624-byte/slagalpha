@@ -12,6 +12,10 @@ from slagalpha.data.archive_batch import ArchiveBatchResult
 from slagalpha.data.normalization_batch import NormalizationBatchResult
 from slagalpha.data.universe_batch import UniverseBatchResult
 from slagalpha.domain.universe import ContractRegistry, ExclusionLedger
+from slagalpha.reporting.dependency_artifacts import (
+    DependencyArtifactManifest,
+    inspect_dependency_artifacts,
+)
 from slagalpha.reporting.environment import EnvironmentLockError, inspect_environment_lock
 from slagalpha.reporting.run_manifest import _publish_immutable, canonical_json_bytes
 from slagalpha.research.execution_inputs import (
@@ -282,10 +286,25 @@ def inspect_dev_execution_semantics(
         else:
             blockers.append("RUN_INPUT_SEMANTIC_MISMATCH_EXCLUSION_LEDGER")
 
+    dependencies = parse(InputArtifactRole.DEPENDENCY_ARTIFACTS, DependencyArtifactManifest)
+    if dependencies is not None:
+        if environment is None or InputArtifactRole.ENVIRONMENT_LOCK not in validated:
+            blockers.append("RUN_INPUT_SEMANTIC_UNBOUND_DEPENDENCY_ARTIFACTS")
+        else:
+            try:
+                inspect_dependency_artifacts(
+                    project_dir=project_dir,
+                    environment_lock=_read_verified(project_dir, environment),
+                    manifest=dependencies,
+                )
+            except (OSError, ValueError):
+                blockers.append("RUN_INPUT_SEMANTIC_INVALID_DEPENDENCY_ARTIFACTS")
+            else:
+                validated.add(InputArtifactRole.DEPENDENCY_ARTIFACTS)
+
     for role in (
         InputArtifactRole.CANDLE_ONE_MINUTE,
         InputArtifactRole.FUNDING,
-        InputArtifactRole.DEPENDENCY_ARTIFACTS,
     ):
         if one(role) is not None:
             blockers.append(f"RUN_INPUT_SEMANTIC_VALIDATOR_MISSING_{role.value}")

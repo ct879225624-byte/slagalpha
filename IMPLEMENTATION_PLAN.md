@@ -260,9 +260,11 @@ P0 完成并验收后，只启动 P1。之后每个阶段单独报告：
 - DEV 运行记录、只读前检和本地环境版本锁已完成；首次本地 Git 基线已获用户授权，
   验收与跟踪边界见 `docs/git-baseline.md`。历史规则仍阻断，不以工程工具冒充策略验收。
 - 10 个 DEV 参数版本已绑定冻结计划和策略规则；尚未完成正式执行器的语义与区间核验。
-- DEV 文件内容哈希门禁已验证 11 类现有工件，显式空排除表已补齐并与 Universe 对齐；
-  1m、Funding、依赖工件仍缺失。语义门禁另确认多周期 normalization batch 不完整
+- DEV 文件内容哈希门禁已验证 12 类必需工件，另有 1 份附加诊断；显式空排除表已补齐并与 Universe 对齐；
+  1m、Funding 仍缺失。语义门禁另确认多周期 normalization batch 不完整
   （27 个失败）。
 - 27 个失败原始 ZIP 已逐个完成缺口审计；有限窗口无重叠，但 Wilder ATR 递归历史仍有
   18 个文件的依赖未解决，保持阻断。证据见 `docs/p9-normalization-gap-audit.md`。
 - 缺口审计已作为可选诊断绑定到语义门禁；旧报告兼容，不移除 complete 要求。
+- 29 个现有锁定版本的 wheel 已冻结文件哈希并完成离线 dry-run，语义门禁重读真实 wheel；
+  未安装/升级依赖，见 `docs/p9-dependency-artifacts.md`。

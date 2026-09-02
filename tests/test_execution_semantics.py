@@ -25,6 +25,7 @@ from slagalpha.research.execution_semantics import (
 )
 from slagalpha.research.parameters import DevParameterVersion, build_dev_parameter_version
 from slagalpha.research.sensitivity import SensitivityPlan
+from test_dependency_artifacts import LOCK, _manifest, _wheel
 from test_sensitivity_plan import _audit, _plan, _split
 
 
@@ -219,3 +220,41 @@ def test_saved_reports_without_optional_gap_diagnostics_remain_valid() -> None:
         manifests / "dev_execution_semantics" /
         "00104d25f2d297d2160a0ee471c1ac29fab4713744bdd8582e0b80a82e5a23ad.json").read_bytes())
     assert content.status == semantic.status == "BLOCKED"
+
+
+@pytest.mark.parametrize("tamper", [False, True])
+def test_dependency_gate_rehashes_wheels_not_just_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tamper: bool,
+) -> None:
+    plan, parameter, selections = _core_fixture(tmp_path)
+    _wheel(tmp_path)
+    manifest = _manifest(tmp_path)
+    relative = "inputs/dependencies.json"
+    content_bytes = manifest.model_dump_json().encode()
+    (tmp_path / relative).write_bytes(content_bytes)
+    lock_relative = "inputs/requirements.lock"
+    (tmp_path / lock_relative).write_bytes(LOCK)
+    selections = tuple(item for item in selections
+                       if item.role is not InputArtifactRole.ENVIRONMENT_LOCK)
+    selections = (*selections, InputArtifactSelection(
+        role=InputArtifactRole.ENVIRONMENT_LOCK, relative_path=lock_relative,
+        expected_sha256=hashlib.sha256(LOCK).hexdigest(),
+    ), InputArtifactSelection(
+        role=InputArtifactRole.DEPENDENCY_ARTIFACTS, relative_path=relative,
+        expected_sha256=hashlib.sha256(content_bytes).hexdigest(),
+    ))
+    # Only installed-version inspection is mocked; wheel metadata/hash checks are real.
+    monkeypatch.setattr(
+        "slagalpha.research.execution_semantics.inspect_environment_lock",
+        lambda _: hashlib.sha256(LOCK).hexdigest(),
+    )
+    if tamper:
+        (tmp_path / "wheels" / manifest.wheels[0].filename).write_bytes(b"corrupted wheel")
+    content = inspect_dev_execution_inputs(
+        project_dir=tmp_path, plan=plan, parameter=parameter, selections=selections,
+    )
+    report = inspect_dev_execution_semantics(
+        project_dir=tmp_path, plan=plan, parameter=parameter, content_report=content,
+    )
+    assert (InputArtifactRole.DEPENDENCY_ARTIFACTS in report.validated_roles) is not tamper
+    assert ("RUN_INPUT_SEMANTIC_INVALID_DEPENDENCY_ARTIFACTS" in report.blockers) is tamper

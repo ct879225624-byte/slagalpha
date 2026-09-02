@@ -63,6 +63,10 @@ SELECTIONS = (
      "data/manifests/normalization_gap_audit/"
      "9fdfe51b0a209451b2bae612f427ba33702b8225b71b03211372f0c986c1a7fc.json",
      "3f1a0c3669a9f527d93d1a9df46707ac1cd69573a81a213286a4376d8d9b1479"),
+    (InputArtifactRole.DEPENDENCY_ARTIFACTS,
+     "data/manifests/dependency_artifacts/"
+     "060d25d955664a803bbdc39b1eecbd466cb57a4a9c5ee278c9c15cb4358bc567.json",
+     "3740153d436cc461306f8027359d9c50de367e0c2c9f0b2c16e0c70f964a0bca"),
 )
 
 

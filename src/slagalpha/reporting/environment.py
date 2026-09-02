@@ -32,11 +32,8 @@ def _normalize_packages(installed: Mapping[str, str]) -> dict[str, str]:
     return normalized
 
 
-def verify_environment_lock(
-    content: bytes, *, runtime: Mapping[str, str], installed_versions: Mapping[str, str],
-) -> str:
-    """Return the lock's byte hash only if platform and all installed pins match exactly."""
-
+def parse_environment_lock(content: bytes) -> tuple[dict[str, str], dict[str, str]]:
+    """Read strict runtime metadata and pins without inspecting or changing the environment."""
     metadata: dict[str, str] = {}
     pins: dict[str, str] = {}
     try:
@@ -63,6 +60,15 @@ def verify_environment_lock(
         pins[name] = version
     if set(metadata) != _RUNTIME_FIELDS or not pins:
         raise EnvironmentLockError("environment lock requires runtime metadata and dependency pins")
+    return metadata, pins
+
+
+def verify_environment_lock(
+    content: bytes, *, runtime: Mapping[str, str], installed_versions: Mapping[str, str],
+) -> str:
+    """Return the lock's byte hash only if platform and all installed pins match exactly."""
+
+    metadata, pins = parse_environment_lock(content)
     if metadata != dict(runtime):
         raise EnvironmentLockError("environment lock runtime does not match Python/platform")
     actual = _normalize_packages(installed_versions)

@@ -15,12 +15,14 @@
 - 多周期 normalization batch 必须 complete，dataset hash 与 Universe 输入一致。
 - archive batch 必须 complete，capacity plan hash 与 normalization 输入一致。
 - 若提供排除表，其版本必须与 Universe batch 一致。
+- 依赖工件必须与已验证环境锁一致，全部 wheel 名称/版本/平台元数据和真实文件哈希
+  必须重新核验，不能仅凭汇总 manifest 放行。
 - 若提供缺口审计，其 normalization hash、daily snapshot hash、快照数、失败文件数、
   失败 identity 和有限回看参数必须与当前输入一致；递归依赖阻断原样传播。
   审计只补充诊断，不解除 complete 要求；未提供它的旧冻结报告仍可读取。
 
-目前尚无正式 1m、Funding 和依赖工件 manifest schema；即使以后只提供任意文件并通过
-字节哈希，这三类也会因缺少语义验证器继续失败关闭。Aggregate Trades 可选，但一旦声明
+目前尚无正式 1m、Funding manifest schema；即使以后只提供任意文件并通过
+字节哈希，这两类也会因缺少语义验证器继续失败关闭。Aggregate Trades 可选，但一旦声明
 也必须先有语义验证器才能用于运行。
 
 ## 当前真实结果
@@ -33,17 +35,16 @@
 
 报告哈希：
 
-`9f475033bd194958400de5209a35d3de6f5491560e5e05c26260cfcb6b9d169e`
+`095a2f2e7d33e2e5247a5656a919c9fec15b38daa4e86e320331b0dd4f9f20fd`
 
-10 类通过解析与交叉引用：Archive、合约规则注册表、环境锁、显式空排除表、参数版本、
+11 类通过解析与交叉引用：Archive、合约规则注册表、依赖 wheel 工件、环境锁、显式空排除表、参数版本、
 输入审计、split、敏感度计划、策略规则和 Universe。
 
-4 类仍 deferred：
+3 类仍 deferred：
 
 - 多周期 Candle：已提供的 normalization batch 为 `complete=false`，27 个文件规范化失败。
 - 1m Candle：没有正式输入 manifest。
 - Funding：没有正式输入 manifest。
-- 依赖工件：只有环境版本锁，没有 wheel/source artifact 哈希清单。
 
 报告还保留历史规则 0 个合格成员日的既有阻断。状态为 `BLOCKED`，固定
 `research_authorized=false`、`strategy_executed=false`、`locked_test_consumed=false`。

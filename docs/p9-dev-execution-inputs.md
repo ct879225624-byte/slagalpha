@@ -33,16 +33,15 @@ Aggregate Trades 是可选类别：缺失时 P7 固定使用 OHLC 不利顺序�
 .venv\Scripts\python.exe scripts\p9_dev_execution_inputs.py
 ```
 
-脚本使用代码中冻结的期望哈希，不从文件现算“期望值”。当前 11 类必需工件和 1 份附加
+脚本使用代码中冻结的期望哈希，不从文件现算“期望值”。当前 12 类必需工件和 1 份附加
 缺口审计逐字节匹配，
 报告哈希为：
 
-`78ef74e387f078ededef2dccc23b28094190ba62a630c8c6ddb52b668e34e315`
+`b1175c2a36c7baac885b160df48a57981bfa2ac05de5576883480baa2e9c8c6f`
 
-状态为 `BLOCKED`，缺少三类：
+状态为 `BLOCKED`，缺少两类：
 
 - `CANDLE_ONE_MINUTE`
-- `DEPENDENCY_ARTIFACTS`
 - `FUNDING`
 
 同时保留 `NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS`。因此没有研究授权，也没有
@@ -54,5 +53,6 @@ Aggregate Trades 是可选类别：缺失时 P7 固定使用 OHLC 不利顺序�
 当前多周期 normalization batch 本身仍为 `complete=false`，含 27 个规范化失败；历史规则
 也全部未验证。显式空排除表工件见 `docs/p9-exclusion-ledger-artifact.md`。下一层语义门禁
 已实现并确认其版本以及其余阻断，见
-`docs/p9-dev-execution-semantics.md`。1m、Funding 和依赖工件仍缺少正式 manifest schema；
+`docs/p9-dev-execution-semantics.md`。依赖 wheel 工件已补齐并实际重验，见
+`docs/p9-dependency-artifacts.md`。1m、Funding 仍缺少正式 manifest schema；
 未通过前不得把内容哈希通过理解为数据已就绪。
