@@ -33,3 +33,33 @@ Entry 窗口右开，最后可能入场分钟为 `expires_at - 1m`，取其 15m 
 
 有限请求 → 1m 完整区间及来源校验 → Funding 真实结算日程/数值覆盖校验 → 再验上游证据。
 不得以空请求列表、缺失数据或 mock 解除门禁。Aggregate Trades 保持可选的后续输入。
+
+## 3. 单请求的原始 REST 响应工件
+
+`research/replay_market_data.py` 只读取已经保存的响应，没有网络调用。
+每页描述固定公开 base URL、endpoint、symbol、查询起止毫秒、limit、观测时间、
+响应文件相对路径和原始 SHA-256。拒绝 API 错误对象、重复 JSON key、逃逸路径、
+符号链接及超过 4 MiB 的单页响应；所有查询页须按顺序无重叠、无空档覆盖请求区间。
+
+1m：每页按整分钟切分，必须逐行覆盖全部请求分钟；复用现有 Decimal Candle 规范化器，
+按月份分组后拼接；保留 `source=REST` 与每页原始文件哈希。完整 OHLC、volume、
+交易笔数、来源 close time 和收盘状态检查不变。不会排序、去重或补造错误响应。
+
+Funding：使用返回结算时刻构造已有 P7 `FundingDataset`，不硬编码周期；
+查询区间按包含两端的毫秒语义覆盖，应用层仍使用原 P7 持仓时刻规则。
+达到 limit 的页拒绝，需细分查询区间证明未截断；缺 rate/mark、重复或乱序结算、
+未知字段和 Special 类型拒绝。全空历史也拒绝，需要独立日程证据才能认定无结算。
+部分查询页可以为空，但所有页合并后必须有结算记录；本版本暂不接受无结算窗口。
+
+工件绑定 request hash、查询描述、记录数与规范化内容哈希。每次加载都重新校验原始字节
+和规范化结果；不能只读取汇总 JSON 后认为数据未变化。全部通过仍固定
+`research_authorized=false`，不代替原始请求证据重验或正式 DEV 请求集合完整性验收。
+人工提供的查询描述/观测时刻并非交易所签名，来源真实性仍需后续受控采集链证明。
+
+接口核对日期：2026-09-02。[Binance 当前官方市场数据文档](https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data)
+确认 `/fapi/v1/klines` 12 字段响应及最大 limit=1500；Funding limit 最大 1000、
+升序、起止均包含，以及可选 `rateType`。兼容历史未提供 `rateType` 的普通记录，
+显式 `Special` 不按普通 Crypto Funding 入账。
+
+目前测试响应全部为合成 fixtures；没有抓取、落地或批准任何真实 replay 输入。
+正式运行的 1m/Funding 聚合输入门禁尚未接入这些单请求工件，仍保持阻断。
