@@ -74,3 +74,21 @@ Funding：使用返回结算时刻构造已有 P7 `FundingDataset`，不硬编�
 
 合成端到端测试确认正常 TP2 与最后可能入场后的 TIME_EXIT 均可闭合，并接入原 P7
 Funding 计算；这是测试代码显式调用 P7，不是加载器自动执行，更不是策略验收结果。
+
+## 5. 总门禁与本批次验证
+
+总门禁现在识别单请求工件，但只解析角色和 schema，不把它记为全 DEV 数据已就绪。
+角色不匹配直接拒绝；角色正确仍要求 `REQUEST_SET_COVERAGE_REQUIRED`。
+完整 DEV 请求集合必须另行绑定上游扫描证据，不能由手选样本或空列表代替。
+
+本批次新增 70 项测试，合计 455 passed、1 skipped；Ruff、mypy 111 文件及 pip check 通过。
+运行：
+
+```powershell
+.venv\Scripts\python.exe -m pytest -q tests/test_replay_inputs.py tests/test_replay_market_data.py tests/test_replay_loading.py tests/test_execution_semantics.py
+.venv\Scripts\python.exe -m pytest -q
+.venv\Scripts\python.exe -m ruff check .
+.venv\Scripts\python.exe -m mypy src tests scripts
+```
+
+当前仍为 P9 输入准备；整体 9/14（约 64%）、P9 1/4，不统计为策略研究通过。

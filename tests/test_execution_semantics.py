@@ -26,6 +26,7 @@ from slagalpha.research.execution_semantics import (
 from slagalpha.research.parameters import DevParameterVersion, build_dev_parameter_version
 from slagalpha.research.sensitivity import SensitivityPlan
 from test_dependency_artifacts import LOCK, _manifest, _wheel
+from test_replay_loading import _fixture as _replay_fixture
 from test_sensitivity_plan import _audit, _plan, _split
 
 
@@ -258,3 +259,29 @@ def test_dependency_gate_rehashes_wheels_not_just_manifest(
     )
     assert (InputArtifactRole.DEPENDENCY_ARTIFACTS in report.validated_roles) is not tamper
     assert ("RUN_INPUT_SEMANTIC_INVALID_DEPENDENCY_ARTIFACTS" in report.blockers) is tamper
+
+
+@pytest.mark.parametrize("mismatched_role", [False, True])
+def test_single_replay_artifact_cannot_claim_full_dev_coverage(
+    tmp_path: Path, mismatched_role: bool,
+) -> None:
+    plan, parameter, selections = _core_fixture(tmp_path)
+    _, _, one_minute, funding = _replay_fixture(tmp_path)
+    artifact = funding if mismatched_role else one_minute
+    content_bytes = artifact.model_dump_json().encode()
+    relative = "inputs/single-replay.json"
+    (tmp_path / relative).write_bytes(content_bytes)
+    selections = (*selections, InputArtifactSelection(
+        role=InputArtifactRole.CANDLE_ONE_MINUTE, relative_path=relative,
+        expected_sha256=hashlib.sha256(content_bytes).hexdigest(),
+    ))
+    content = inspect_dev_execution_inputs(
+        project_dir=tmp_path, plan=plan, parameter=parameter, selections=selections,
+    )
+    report = inspect_dev_execution_semantics(
+        project_dir=tmp_path, plan=plan, parameter=parameter, content_report=content,
+    )
+    reason = "MISMATCH" if mismatched_role else "REQUEST_SET_COVERAGE_REQUIRED"
+    assert f"RUN_INPUT_SEMANTIC_{reason}_CANDLE_ONE_MINUTE" in report.blockers
+    assert InputArtifactRole.CANDLE_ONE_MINUTE in report.deferred_roles
+    assert report.research_authorized is False

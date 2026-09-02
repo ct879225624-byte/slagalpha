@@ -34,6 +34,7 @@ from slagalpha.research.parameters import (
     DevParameterVersion,
     require_parameter_plan_binding,
 )
+from slagalpha.research.replay_market_data import ReplayMarketDataArtifact
 from slagalpha.research.sensitivity import SensitivityPlan
 from slagalpha.research.splits import (
     DatasetRole,
@@ -306,8 +307,13 @@ def inspect_dev_execution_semantics(
         InputArtifactRole.CANDLE_ONE_MINUTE,
         InputArtifactRole.FUNDING,
     ):
-        if one(role) is not None:
-            blockers.append(f"RUN_INPUT_SEMANTIC_VALIDATOR_MISSING_{role.value}")
+        replay_data = parse(role, ReplayMarketDataArtifact)
+        if replay_data is not None:
+            if replay_data.role != role.value:
+                blockers.append(f"RUN_INPUT_SEMANTIC_MISMATCH_{role.value}")
+            else:
+                # One bounded request never establishes the full DEV request set's coverage.
+                blockers.append(f"RUN_INPUT_SEMANTIC_REQUEST_SET_COVERAGE_REQUIRED_{role.value}")
     if one(InputArtifactRole.AGGREGATE_TRADES) is not None:
         blockers.append("RUN_INPUT_SEMANTIC_VALIDATOR_MISSING_AGGREGATE_TRADES")
 

@@ -54,5 +54,6 @@ Aggregate Trades 是可选类别：缺失时 P7 固定使用 OHLC 不利顺序�
 也全部未验证。显式空排除表工件见 `docs/p9-exclusion-ledger-artifact.md`。下一层语义门禁
 已实现并确认其版本以及其余阻断，见
 `docs/p9-dev-execution-semantics.md`。依赖 wheel 工件已补齐并实际重验，见
-`docs/p9-dependency-artifacts.md`。1m、Funding 仍缺少正式 manifest schema；
-未通过前不得把内容哈希通过理解为数据已就绪。
+`docs/p9-dependency-artifacts.md`。1m、Funding 的单请求 schema 和离线校验已实现，
+但仍无真实 accepted 请求集合及其完整聚合输入，见 `docs/p9-replay-data-contract.md`；
+未通过前不得把单份工件或内容哈希通过理解为全研究数据已就绪。

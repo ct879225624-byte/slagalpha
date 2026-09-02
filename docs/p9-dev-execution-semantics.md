@@ -21,9 +21,10 @@
   失败 identity 和有限回看参数必须与当前输入一致；递归依赖阻断原样传播。
   审计只补充诊断，不解除 complete 要求；未提供它的旧冻结报告仍可读取。
 
-目前尚无正式 1m、Funding manifest schema；即使以后只提供任意文件并通过
-字节哈希，这两类也会因缺少语义验证器继续失败关闭。Aggregate Trades 可选，但一旦声明
-也必须先有语义验证器才能用于运行。
+1m、Funding 已有单请求工件 schema 和离线校验器，见 `docs/p9-replay-data-contract.md`。
+但单请求不代表全部 DEV 请求集合：总门禁遇到此类工件时解析角色后仍报告
+`REQUEST_SET_COVERAGE_REQUIRED`，不将其计为全研究范围数据已完成。
+任意文件或角色串错仍失败关闭。Aggregate Trades 可选，但一旦声明也必须先有语义验证器。
 
 ## 当前真实结果
 
@@ -43,8 +44,8 @@
 3 类仍 deferred：
 
 - 多周期 Candle：已提供的 normalization batch 为 `complete=false`，27 个文件规范化失败。
-- 1m Candle：没有正式输入 manifest。
-- Funding：没有正式输入 manifest。
+- 1m Candle：没有真实 accepted 请求集合及其完整聚合输入 manifest。
+- Funding：没有真实 accepted 请求集合及其完整聚合输入 manifest。
 
 报告还保留历史规则 0 个合格成员日的既有阻断。状态为 `BLOCKED`，固定
 `research_authorized=false`、`strategy_executed=false`、`locked_test_consumed=false`。

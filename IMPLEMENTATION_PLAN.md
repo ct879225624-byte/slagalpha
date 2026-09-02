@@ -268,3 +268,6 @@ P0 完成并验收后，只启动 P1。之后每个阶段单独报告：
 - 缺口审计已作为可选诊断绑定到语义门禁；旧报告兼容，不移除 complete 要求。
 - 29 个现有锁定版本的 wheel 已冻结文件哈希并完成离线 dry-run，语义门禁重读真实 wheel；
   未安装/升级依赖，见 `docs/p9-dependency-artifacts.md`。
+- 按 accepted P6 请求限定的 DEV 数据窗口、1m/Funding 单请求 REST 工件校验与联合加载已实现，
+  使用合成测试验收；总门禁仍要求完整请求集合，不能用单请求放行。未生成真实请求或下载行情。
+  见 `docs/p9-replay-data-contract.md`。
