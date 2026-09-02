@@ -263,3 +263,5 @@ P0 完成并验收后，只启动 P1。之后每个阶段单独报告：
 - DEV 文件内容哈希门禁已验证 11 类现有工件，显式空排除表已补齐并与 Universe 对齐；
   1m、Funding、依赖工件仍缺失。语义门禁另确认多周期 normalization batch 不完整
   （27 个失败）。
+- 27 个失败原始 ZIP 已逐个完成缺口审计；有限窗口无重叠，但 Wilder ATR 递归历史仍有
+  18 个文件的依赖未解决，保持阻断。证据见 `docs/p9-normalization-gap-audit.md`。
