@@ -35,6 +35,7 @@ dist/
 !/data/manifests/dev_execution_inputs/
 !/data/manifests/dev_execution_semantics/
 !/data/manifests/dev_rule_gaps/
+!/data/manifests/dev_scan_plan/
 !/data/manifests/exchange_info/
 !/data/manifests/exclusion_ledger/
 !/data/manifests/historical_rule_gate/
