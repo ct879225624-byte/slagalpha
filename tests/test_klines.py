@@ -220,3 +220,11 @@ def test_archive_to_parquet_preserves_decimal_schema_and_metadata(tmp_path: Path
     assert table.schema.metadata[b"normalized_content_hash"].decode() == (
         manifest.normalized_content_hash
     )
+
+    repeated_path, repeated_manifest = normalize_archive_to_parquet(
+        archive, download, spec, tmp_path / "normalized",
+        evaluated_at=datetime(2024, 2, 1, tzinfo=UTC),
+    )
+    assert repeated_path == parquet_path
+    assert repeated_manifest == manifest
+    assert table["ingested_at"][0].as_py() == manifest.normalized_at

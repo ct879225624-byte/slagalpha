@@ -483,8 +483,16 @@ def normalize_archive_to_parquet(
         evaluated_at=evaluated_at,
         require_full_period=require_full_period,
     )
-    normalized_at = datetime.now(UTC)
     destination = normalized_parquet_path(normalized_data_dir, spec, actual_source_hash)
+    if destination.exists():
+        stored_times = pq.read_table(destination, columns=["ingested_at"])["ingested_at"]
+        unique_times = set(stored_times.to_pylist())
+        if len(unique_times) != 1 or None in unique_times:
+            raise CandleValidationError("existing Parquet has invalid ingestion timestamps")
+        normalized_at = next(iter(unique_times))
+    else:
+        now = datetime.now(UTC)
+        normalized_at = now.replace(microsecond=now.microsecond // 1000 * 1000)
     parquet_hash = write_normalized_parquet(
         normalized_frame,
         destination,

@@ -141,8 +141,11 @@ def load_verified_candle_partition(
             stored[list(normalized.columns)], normalized, check_dtype=False, check_exact=True,
         )
         observed_at = pd.DatetimeIndex(stored["ingested_at"])
+        expected_at = _to_arrow_table(normalized.iloc[:1], manifest.normalized_at)[
+            "ingested_at"
+        ][0].as_py()
         if observed_at.tz is None or not bool(
-            (observed_at == pd.Timestamp(manifest.normalized_at).floor("ms")).all()
+            (observed_at == pd.Timestamp(expected_at)).all()
         ):
             raise CandleInputError("Parquet ingestion timestamps disagree with receipt")
     except (AssertionError, TypeError, KeyError, ValueError) as error:
