@@ -45,6 +45,8 @@ def _setup_context(
     intervals: tuple[ScanInterval, ...] = ("15m", "1h", "4h", "1d")
     for interval in intervals:
         count = 185 if interval == "4h" and case == "not_ready" else 200
+        if interval == "15m" and case == "trigger_not_ready":
+            count = 20
         step = timedelta(milliseconds=INTERVAL_MILLISECONDS[interval])
         end = last_closed_boundary(at, interval)
         start = end - count * step
@@ -55,7 +57,7 @@ def _setup_context(
             prices = [str(100 + index / 1000) for index in range(count)]
         if interval == "1d" and case == "daily_block":
             prices = [str(1000 - index) for index in range(count)]
-        if interval == "1h" and case in ("eligible", "trigger", "obstacle"):
+        if interval == "1h" and case in ("eligible", "trigger", "obstacle", "trigger_not_ready"):
             prices[-1] = str(100 + count - 1 - 30)
         overrides = {}
         if interval == "15m" and case in ("trigger", "obstacle"):

@@ -84,3 +84,8 @@ storage, recovery behavior and remaining validation boundaries.
 The local Git baseline procedure and its acceptance receipt are documented in
 `docs/git-baseline.md`. Generated preflight reports are ignored so checking a clean
 checkout does not itself make that checkout dirty. No remote push is part of this workflow.
+
+The offline, source-revalidated P3–P6 scanner input path and its current limitations are
+documented in `docs/p9-scanner-input-contract.md`. Positive strategy paths are tested with
+explicit synthetic archives and rules; they do not approve historical seeds or real research.
+See `docs/development-checkpoint-2026-09-03.md` for the latest staged development checkpoint.
