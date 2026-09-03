@@ -92,3 +92,5 @@ See `docs/development-checkpoint-2026-09-03.md` for the latest staged developmen
 
 The slower opt-in synthetic end-to-end check is documented in
 `docs/p9-source-pipeline-acceptance.md`; it uses real validators without approving real research.
+It invokes `research.scan_slot.compute_source_bound_scan_slot` for P3–P6 computation;
+the entry checks the complete research context and exact slot before rereading declared histories.

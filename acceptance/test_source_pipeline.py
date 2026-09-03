@@ -23,12 +23,10 @@ from slagalpha.research.parameters import build_dev_parameter_version
 from slagalpha.research.replay_market_data import build_replay_market_data_artifact
 from slagalpha.research.request_set_market_data import DevRequestMarketDataPair
 from slagalpha.research.scan_days import build_source_bound_scan_day
-from slagalpha.research.scan_features import compute_scan_features
 from slagalpha.research.scan_plan import build_dev_scan_plan
-from slagalpha.research.scan_setup import compute_scan_setup
+from slagalpha.research.scan_slot import compute_source_bound_scan_slot
 from slagalpha.research.scan_storage import save_source_bound_scan_day
-from slagalpha.research.scan_trade_plan import ScanTradePlanEvidence, compute_scan_trade_plan
-from slagalpha.research.scan_trigger import compute_scan_trigger
+from slagalpha.research.scan_trade_plan import ScanTradePlanEvidence
 from slagalpha.research.sensitivity import build_default_sensitivity_plan
 from slagalpha.research.source_request_set import (
     build_source_bound_replay_request_set,
@@ -123,30 +121,15 @@ def _prepare(root: Path) -> tuple[dict[str, Any], SeedInputs]:
 
 
 def _source(context: dict[str, Any], seeds: SeedInputs, at: datetime) -> ScanTradePlanEvidence:
-    features = []
+    histories = []
     for interval, (start, sources) in seeds.items():
         _, history = load_scan_candle_history(
             project_dir=context["project_dir"], scan_plan=context["scan_plan"],
             symbol="BTCUSDT", interval=interval, confirmation_close=at,
             history_start=start, sources=sources,
         )
-        _, _, feature = compute_scan_features(
-            project_dir=context["project_dir"], scan_plan=context["scan_plan"],
-            plan=context["plan"], parameter=context["parameter"], history=history,
-        )
-        features.append(feature)
-    setup = compute_scan_setup(project_dir=context["project_dir"], scan_plan=context["scan_plan"],
-                               plan=context["plan"], features=tuple(features))
-    trigger = compute_scan_trigger(
-        project_dir=context["project_dir"], scan_plan=context["scan_plan"],
-        plan=context["plan"], setup_evidence=setup,
-    )
-    return compute_scan_trade_plan(
-        project_dir=context["project_dir"], scan_plan=context["scan_plan"], plan=context["plan"],
-        split=context["split"], registry=context["registry"], trigger_evidence=trigger,
-        universe=next(item for item in context["snapshots"]
-                      if item.effective_from <= at < item.effective_to),
-    )
+        histories.append(history)
+    return compute_source_bound_scan_slot(**context, histories=tuple(histories))
 
 
 def test_synthetic_fixture_has_one_source_computed_accepted_plan(tmp_path: Path) -> None:
