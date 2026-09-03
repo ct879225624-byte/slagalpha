@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -22,8 +23,10 @@ from slagalpha.strategy.triggers import TriggerType
 from test_scan_setup import _setup_context
 
 
-def _trigger_context(root: Path, *, case: str = "trigger") -> dict[str, Any]:
-    context = _setup_context(root, case=case)
+def _trigger_context(
+    root: Path, *, case: str = "trigger", at: datetime = datetime(2024, 1, 2, 23, 30, tzinfo=UTC),
+) -> dict[str, Any]:
+    context = _setup_context(root, case=case, at=at)
     setup = compute_scan_setup(**context)
     context.pop("features")
     return {**context, "setup_evidence": setup}

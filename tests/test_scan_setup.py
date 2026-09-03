@@ -34,8 +34,8 @@ from test_scan_plan import _scan_context
 
 def _setup_context(
     root: Path, *, case: str = "eligible", candidate_index: int = 0,
+    at: datetime = datetime(2024, 1, 2, 23, 30, tzinfo=UTC),
 ) -> dict[str, Any]:
-    at = datetime(2024, 1, 2, 23, 30, tzinfo=UTC)
     scan_plan = _history_scan_plan(candidate_index=candidate_index)
     plan = _scan_context()["plan"]
     parameter = build_dev_parameter_version(
@@ -55,16 +55,18 @@ def _setup_context(
             prices = [str(100 + index / 1000) for index in range(count)]
         if interval == "1d" and case == "daily_block":
             prices = [str(1000 - index) for index in range(count)]
-        if interval == "1h" and case in ("eligible", "trigger"):
+        if interval == "1h" and case in ("eligible", "trigger", "obstacle"):
             prices[-1] = str(100 + count - 1 - 30)
         overrides = {}
-        if interval == "15m" and case == "trigger":
+        if interval == "15m" and case in ("trigger", "obstacle"):
             prices = ["100"] * count
             prices[-6] = "99"
             prices[-5:-1] = ["99.5"] * 4
             prices[-1] = "103"
             overrides = {index: {"quote_volume": "800"} for index in range(count - 4, count - 1)}
             overrides[count - 1] = {"high": "103.2", "low": "99", "quote_volume": "1500"}
+            if case == "obstacle":
+                overrides[count - 20] = {"high": "106"}
         sources = []
         cursor = start
         index = 0

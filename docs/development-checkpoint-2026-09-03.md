@@ -69,3 +69,17 @@ SKIPPED_SETUP、NOT_READY、已评估但未触发保持独立；模型声明不�
 全仓 629 passed、1 skipped，Ruff、mypy 129 文件、pip check 通过。
 下一项将 P5 接入历史规则约束下的 P6 Entry/Stop/TP，再复用有限 DEV 请求契约。
 仍无真实行情策略运行、网络下载或研究授权；整体 9/14（约 64%）、P9 1/4。
+
+## 第 6 项：P6 与有限 DEV 请求
+
+第 5 项本地提交 `5414d53`。新增 `research/scan_trade_plan.py`，将源数据重算的 P5
+接入历史规则约束下的 Entry/Stop/TP，再生成有限 DEV 数据请求。历史规则与 Universe
+在读取行情前检查；accepted plan 的整段请求仍须落在 DEV 且由 VERIFIED 规则覆盖。
+无触发、历史不足、Entry/Stop 拒绝和 TP 拒绝单独保留；拒绝的计划不产生数据请求。
+
+新增 16 项合成测试，含原始四周期行情到 526 根 1m 请求的正向链路、止损/障碍拒绝、
+跨 DEV、规则失效和伪造结果复验。全仓 645 passed、1 skipped，Ruff、mypy 131 文件、
+pip check 通过。截至本项新增 114 项测试；真实四周期 pilot 原始输入未改写。
+下一项：把逐位计算结果转换为现有扫描记录，历史不足不得伪装成 NO_SIGNAL。
+当前仍不是全 DEV 调度器，没有真实策略运行、数据下载或种子审核。
+整体保持 9/14（约 64%）、P9 1/4。
