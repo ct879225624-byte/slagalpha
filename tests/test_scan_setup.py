@@ -55,8 +55,16 @@ def _setup_context(
             prices = [str(100 + index / 1000) for index in range(count)]
         if interval == "1d" and case == "daily_block":
             prices = [str(1000 - index) for index in range(count)]
-        if interval == "1h" and case == "eligible":
+        if interval == "1h" and case in ("eligible", "trigger"):
             prices[-1] = str(100 + count - 1 - 30)
+        overrides = {}
+        if interval == "15m" and case == "trigger":
+            prices = ["100"] * count
+            prices[-6] = "99"
+            prices[-5:-1] = ["99.5"] * 4
+            prices[-1] = "103"
+            overrides = {index: {"quote_volume": "800"} for index in range(count - 4, count - 1)}
+            overrides[count - 1] = {"high": "103.2", "low": "99", "quote_volume": "1500"}
         sources = []
         cursor = start
         index = 0
@@ -70,6 +78,8 @@ def _setup_context(
             sources.append(_partition(
                 root, start=cursor, interval=interval, rows=piece_count,
                 close_prices=tuple(prices[index:index + piece_count]),
+                row_overrides={position - index: values for position, values in overrides.items()
+                               if index <= position < index + piece_count},
             ))
             cursor = piece_end
             index += piece_count

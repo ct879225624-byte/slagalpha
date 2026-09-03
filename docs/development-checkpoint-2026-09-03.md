@@ -58,3 +58,14 @@ ATR 起点充分性仍另行审核，没有放宽任何门禁。
 全仓 619 passed、1 skipped，Ruff、mypy 127 文件、pip check 通过。
 下一项：从当前 1H 指标冻结回踩区域，接 P5 触发证据并验证来源重算。
 全部策略样例仍为合成测试，整体仍为 9/14（约 64%）、P9 1/4。
+
+## 第 5 项：P5 触发证据重算
+
+第 4 项本地提交 `6393e7d`。新增 `research/scan_trigger.py`，从同一时点 1H 指标推导
+SHALLOW/STANDARD 的冻结回踩区域，再将重验的 P4 与 15m P3 接入现有 P5。
+SKIPPED_SETUP、NOT_READY、已评估但未触发保持独立；模型声明不能代替源数据重算。
+
+10 项合成测试验证原始 ZIP → P3 → P4 → MA Reclaim 的正向链路，以及来源/区域/结果防篡改。
+全仓 629 passed、1 skipped，Ruff、mypy 129 文件、pip check 通过。
+下一项将 P5 接入历史规则约束下的 P6 Entry/Stop/TP，再复用有限 DEV 请求契约。
+仍无真实行情策略运行、网络下载或研究授权；整体 9/14（约 64%）、P9 1/4。

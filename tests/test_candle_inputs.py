@@ -15,7 +15,7 @@ import pytest
 from pydantic import ValidationError
 
 from slagalpha.data.archive import ArchiveDownloadManifest, ArchiveSpec, archive_path, sha256_file
-from slagalpha.data.klines import INTERVAL_MILLISECONDS, normalize_archive_to_parquet
+from slagalpha.data.klines import INTERVAL_MILLISECONDS, RAW_COLUMNS, normalize_archive_to_parquet
 from slagalpha.research.candle_inputs import (
     CandleInputError,
     CandlePartitionSource,
@@ -28,6 +28,7 @@ from test_klines import source_row
 def _partition(
     root: Path, *, start: datetime = datetime(2024, 1, 1, tzinfo=UTC),
     interval: str = "15m", rows: int = 3, close_prices: tuple[str, ...] | None = None,
+    row_overrides: dict[int, dict[str, str]] | None = None,
 ) -> CandlePartitionSource:
     spec = ArchiveSpec.model_validate({
         "symbol": "BTCUSDT", "interval": interval, "year": start.year, "month": start.month,
@@ -41,6 +42,8 @@ def _partition(
             price = Decimal(close_prices[index])
             row[1:5] = [str(price), str(price + 2), str(price - 2), str(price)]
         row[6] = str(at + delta - 1)
+        for column, value in (row_overrides or {}).get(index, {}).items():
+            row[RAW_COLUMNS.index(column)] = value
         raw_rows.append(",".join(row))
     archive = archive_path(root / "data/raw", spec)
     archive.parent.mkdir(parents=True, exist_ok=True)
