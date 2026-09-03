@@ -23,8 +23,13 @@ def build_source_bound_scan_day(
     sources: Iterable[ScanTradePlanEvidence], split: ResearchSplitManifest,
     plan: SensitivityPlan, parameter: DevParameterVersion,
     snapshots: tuple[UniverseSnapshot, ...], registry: ContractRegistry,
+    history_lineage: ScanHistoryLineage | None = None,
 ) -> DevScanDayEvidence:
-    """Consume exactly one source per obligation; return no partial day on failure."""
+    """Consume exactly one source per obligation; shared lineage adds cross-day constraints.
+
+    Reusing a lineage never bypasses source revalidation. A failed request-set invocation
+    discards its in-memory lineage; there is no approved seed or persisted validation cache.
+    """
     scan_plan = DevScanPlan.model_validate(scan_plan.model_dump(mode="json"))
     registry = ContractRegistry.model_validate(registry.model_dump(mode="json"))
     snapshots = tuple(UniverseSnapshot.model_validate(item.model_dump(mode="json"))
@@ -38,9 +43,12 @@ def build_source_bound_scan_day(
     if day is None:
         raise CandleInputError("source day is not part of the DEV scan plan")
     universe = next(item for item in snapshots if item.selected_at.date() == selection_date)
+    lineage = (history_lineage if history_lineage is not None
+               else ScanHistoryLineage(scan_plan.plan_hash))
+    if lineage.scan_plan_hash != scan_plan.plan_hash:
+        raise CandleInputError("daily history lineage belongs to a different scan plan")
     source_iterator = iter(sources)
     exhausted = object()
-    lineage = ScanHistoryLineage(scan_plan.plan_hash)
     records = []
     for index in range(day.time_count):
         at = day.first_confirmation + timedelta(minutes=15 * index)
@@ -76,6 +84,7 @@ def require_source_bound_scan_day(
     sources: Iterable[ScanTradePlanEvidence], split: ResearchSplitManifest,
     plan: SensitivityPlan, parameter: DevParameterVersion,
     snapshots: tuple[UniverseSnapshot, ...], registry: ContractRegistry,
+    history_lineage: ScanHistoryLineage | None = None,
 ) -> None:
     """A saved complete day must still match every recomputed record, including NO_SIGNAL."""
     evidence = DevScanDayEvidence.model_validate(evidence.model_dump(mode="json"))
@@ -85,6 +94,7 @@ def require_source_bound_scan_day(
         project_dir=project_dir, scan_plan=scan_plan,
         selection_date=evidence.day_plan.selection_date, sources=sources,
         split=split, plan=plan, parameter=parameter, snapshots=snapshots, registry=registry,
+        history_lineage=history_lineage,
     )
     if current != evidence:
         raise CandleInputError("saved source day differs from recomputed records")

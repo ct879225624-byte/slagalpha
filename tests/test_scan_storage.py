@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 
 from slagalpha.reporting.run_manifest import RunManifestError
+from slagalpha.research.candle_history import ScanHistoryLineage
 from slagalpha.research.candle_inputs import CandleInputError
 from slagalpha.research.request_set import DevScanRecord, build_dev_scan_day_evidence
 from slagalpha.research.scan_storage import (
@@ -211,3 +212,23 @@ def test_verifier_failure_leaves_no_completion_receipt(
     with pytest.raises(CandleInputError, match="changed raw"):
         save_source_bound_scan_day(**storage_context)
     assert not (storage_context["project_dir"] / "data").exists()
+
+
+def test_restore_passes_the_same_lineage_to_daily_revalidation(
+    storage_context: dict[str, Any], revalidation_calls: list[tuple[Any, ...]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    save_source_bound_scan_day(**storage_context)
+    lineage = ScanHistoryLineage(storage_context["scan_plan"].plan_hash)
+    calls = []
+
+    def assert_shared(evidence: Any, **kwargs: Any) -> None:
+        assert kwargs["history_lineage"] is lineage
+        assert tuple(kwargs["sources"]) == storage_context["sources"]
+        calls.append(evidence)
+
+    monkeypatch.setattr("slagalpha.research.scan_storage.require_source_bound_scan_day",
+                        assert_shared)
+    restored = restore_source_bound_scan_day(**_restore_context(storage_context),
+                                             history_lineage=lineage)
+    assert calls == [restored]

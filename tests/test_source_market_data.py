@@ -18,6 +18,7 @@ from slagalpha.research.source_request_set import (
 )
 from test_request_set import _rehash
 from test_request_set_market_data import _market_set_context
+from test_source_request_set import _lineage_histories
 
 
 @pytest.fixture
@@ -61,6 +62,9 @@ def test_source_recovery_then_all_synthetic_market_bytes_are_revalidated(
     assert report.replay_executed is False
     require_source_bound_market_data_report(report, **_arguments(market_context, report=True))
     assert len(restored_days) == 4
+    assert restored_days[0]["history_lineage"] is restored_days[1]["history_lineage"]
+    assert restored_days[2]["history_lineage"] is restored_days[3]["history_lineage"]
+    assert restored_days[0]["history_lineage"] is not restored_days[2]["history_lineage"]
 
 
 @pytest.mark.parametrize("failed_day", [0, 1])
@@ -180,3 +184,37 @@ def test_report_for_another_request_set_fails_before_source_recovery(
     with pytest.raises(ReplayDataInputError, match="different request set"):
         require_source_bound_market_data_report(report, **_arguments(market_context, report=True))
     assert restored_days == []
+
+
+@pytest.mark.parametrize("change", ["origin", "partition"])
+@pytest.mark.parametrize("reuse", [False, True])
+def test_cross_day_lineage_drift_fails_before_any_market_response_read(
+    market_context: dict[str, Any], monkeypatch: pytest.MonkeyPatch, change: str, reuse: bool,
+) -> None:
+    # A matching declaration-based report cannot substitute for cross-day source validation.
+    report = verify_dev_request_set_market_data(**market_context)
+    histories = _lineage_histories(market_context, change)
+    calls: list[dict[str, Any]] = []
+
+    def mock_restore(**kwargs: Any) -> DevScanDayEvidence:
+        index = len(calls)
+        calls.append(kwargs)
+        kwargs["history_lineage"].require(histories[index])
+        day: DevScanDayEvidence = market_context["evidence"][index]
+        return day
+
+    def forbidden_market_loader(**kwargs: Any) -> None:
+        raise AssertionError("cross-day source lineage must pass before any market input is read")
+
+    monkeypatch.setattr("slagalpha.research.source_request_set.restore_source_bound_scan_day",
+                        mock_restore)
+    monkeypatch.setattr("slagalpha.research.request_set_market_data.load_replay_market_data_artifact",
+                        forbidden_market_loader)
+    with pytest.raises(CandleInputError, match="origin changed|partition receipt changed"):
+        if reuse:
+            require_source_bound_market_data_report(
+                report, **_arguments(market_context, report=True),
+            )
+        else:
+            verify_source_bound_request_set_market_data(**_arguments(market_context))
+    assert len(calls) == 2 and calls[0]["history_lineage"] is calls[1]["history_lineage"]

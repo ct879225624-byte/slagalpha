@@ -8,6 +8,7 @@ from pathlib import Path
 from pydantic import TypeAdapter
 
 from slagalpha.domain.universe import ContractRegistry, UniverseSnapshot
+from slagalpha.research.candle_history import ScanHistoryLineage
 from slagalpha.research.candle_inputs import CandleInputError
 from slagalpha.research.parameters import DevParameterVersion
 from slagalpha.research.replay_inputs import Sha256
@@ -36,10 +37,13 @@ def _restored_scan_days(
     hashes = TypeAdapter(tuple[Sha256, ...]).validate_python(day_hashes)
     if len(hashes) != len(scan_plan.days) or len(set(hashes)) != len(hashes):
         raise CandleInputError("source day hashes must cover the complete DEV plan without repeats")
+    # Fresh per invocation, shared by all recovered days, including those without requests.
+    lineage = ScanHistoryLineage(scan_plan.plan_hash)
     for expected, digest in zip(scan_plan.days, hashes, strict=True):
         day = restore_source_bound_scan_day(
             project_dir=project_dir, content_hash=digest, scan_plan=scan_plan,
             split=split, plan=plan, parameter=parameter, snapshots=snapshots, registry=registry,
+            history_lineage=lineage,
         )
         if (day.content_hash != digest or day.scan_plan_hash != scan_plan.plan_hash
             or day.day_plan != expected):

@@ -17,7 +17,11 @@ import pytest
 from slagalpha.data.klines import INTERVAL_MILLISECONDS
 from slagalpha.domain.universe import ContractRegistry, RegistryVerification
 from slagalpha.reporting.run_manifest import canonical_json_bytes
-from slagalpha.research.candle_history import ScanCandleHistory, last_closed_boundary
+from slagalpha.research.candle_history import (
+    ScanCandleHistory,
+    ScanHistoryLineage,
+    last_closed_boundary,
+)
 from slagalpha.research.candle_inputs import CandleInputError
 from slagalpha.research.parameters import build_dev_parameter_version
 from slagalpha.research.request_set import DevScanRecord, build_dev_scan_day_evidence
@@ -282,3 +286,39 @@ def test_daily_lineage_drift_is_rejected_even_for_no_signal_slots(
     with pytest.raises(CandleInputError, match="origin changed|partition receipt changed"):
         build_source_bound_scan_day(**{**sample_day, "sources": tuple(sources)})
     assert len(slot_calls) == 1
+
+
+@pytest.mark.parametrize("restored", [False, True])
+def test_day_must_honor_origin_previously_seen_by_the_shared_lineage(
+    sample_day: dict[str, Any], slot_calls: list[dict[str, Any]], restored: bool,
+) -> None:
+    history = sample_day["sources"][0].trigger_evidence.setup_evidence.features[0].history
+    payload = history.model_dump(mode="json")
+    payload["history_start"] = (history.history_start + timedelta(minutes=15)).isoformat().replace(
+        "+00:00", "Z",
+    )
+    payload["row_count"] -= 1
+    lineage = ScanHistoryLineage(sample_day["scan_plan"].plan_hash)
+    lineage.require(_history_rehash(payload))
+    evidence = build_source_bound_scan_day(**sample_day) if restored else None
+    slot_calls.clear()
+    with pytest.raises(CandleInputError, match="origin changed"):
+        if evidence is not None:
+            context = {key: value for key, value in sample_day.items() if key != "selection_date"}
+            require_source_bound_scan_day(evidence, **context, history_lineage=lineage)
+        else:
+            build_source_bound_scan_day(**sample_day, history_lineage=lineage)
+    assert not slot_calls
+
+
+def test_lineage_from_another_scan_plan_fails_before_consuming_sources(
+    sample_day: dict[str, Any], slot_calls: list[dict[str, Any]],
+) -> None:
+    def forbidden() -> Iterator[ScanTradePlanEvidence]:
+        raise AssertionError("different scan plan must fail before source consumption")
+        yield  # type: ignore[unreachable]
+
+    with pytest.raises(CandleInputError, match="different scan plan"):
+        build_source_bound_scan_day(**{**sample_day, "sources": forbidden()},
+                                     history_lineage=ScanHistoryLineage("0" * 64))
+    assert not slot_calls

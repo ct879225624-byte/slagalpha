@@ -8,6 +8,7 @@ from pydantic import TypeAdapter
 
 from slagalpha.domain.universe import ContractRegistry, UniverseSnapshot
 from slagalpha.reporting.run_manifest import _load_object, _publish_immutable, canonical_json_bytes
+from slagalpha.research.candle_history import ScanHistoryLineage
 from slagalpha.research.candle_inputs import CandleInputError
 from slagalpha.research.parameters import DevParameterVersion
 from slagalpha.research.replay_inputs import Sha256
@@ -80,6 +81,7 @@ def restore_source_bound_scan_day(
     *, project_dir: Path, content_hash: str, scan_plan: DevScanPlan,
     split: ResearchSplitManifest, plan: SensitivityPlan, parameter: DevParameterVersion,
     snapshots: tuple[UniverseSnapshot, ...], registry: ContractRegistry,
+    history_lineage: ScanHistoryLineage | None = None,
 ) -> DevScanDayEvidence:
     """Recover only a completed day, then reread every source and recompute every slot."""
     path = _artifact_path(project_dir, "source_scan_day", content_hash)
@@ -92,5 +94,6 @@ def restore_source_bound_scan_day(
     require_source_bound_scan_day(
         evidence, project_dir=project_dir, scan_plan=scan_plan, sources=sources,
         split=split, plan=plan, parameter=parameter, snapshots=snapshots, registry=registry,
+        history_lineage=history_lineage,
     )
     return evidence

@@ -27,11 +27,12 @@ from test_klines import source_row
 
 def _partition(
     root: Path, *, start: datetime = datetime(2024, 1, 1, tzinfo=UTC),
-    interval: str = "15m", rows: int = 3, close_prices: tuple[str, ...] | None = None,
+    symbol: str = "BTCUSDT", interval: str = "15m", rows: int = 3,
+    close_prices: tuple[str, ...] | None = None,
     row_overrides: dict[int, dict[str, str]] | None = None,
 ) -> CandlePartitionSource:
     spec = ArchiveSpec.model_validate({
-        "symbol": "BTCUSDT", "interval": interval, "year": start.year, "month": start.month,
+        "symbol": symbol, "interval": interval, "year": start.year, "month": start.month,
     })
     delta = INTERVAL_MILLISECONDS[interval]
     raw_rows = []

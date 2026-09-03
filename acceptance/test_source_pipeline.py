@@ -14,6 +14,7 @@ from slagalpha.data.archive import archive_path
 from slagalpha.data.klines import INTERVAL_MILLISECONDS
 from slagalpha.domain.universe import ContractRegistry, RegistryVerification
 from slagalpha.research.candle_history import (
+    ScanHistoryLineage,
     ScanInterval,
     last_closed_boundary,
     load_scan_candle_history,
@@ -25,7 +26,10 @@ from slagalpha.research.request_set_market_data import DevRequestMarketDataPair
 from slagalpha.research.scan_days import build_source_bound_scan_day
 from slagalpha.research.scan_plan import build_dev_scan_plan
 from slagalpha.research.scan_slot import compute_source_bound_scan_slot
-from slagalpha.research.scan_storage import save_source_bound_scan_day
+from slagalpha.research.scan_storage import (
+    restore_source_bound_scan_day,
+    save_source_bound_scan_day,
+)
 from slagalpha.research.scan_trade_plan import ScanTradePlanEvidence
 from slagalpha.research.sensitivity import build_default_sensitivity_plan
 from slagalpha.research.source_request_set import (
@@ -191,6 +195,19 @@ def test_complete_synthetic_source_pipeline_without_mocked_validators(tmp_path: 
                       "source_receipt_bytes": sum(path.stat().st_size for path in tmp_path.glob(
                           "data/manifests/scan_trade_plan_source/*.json"
                       ))}), flush=True)
+    # A shared context must reject a conflicting (but independently source-valid) origin.
+    first_history = sources[0].trigger_evidence.setup_evidence.features[0].history
+    _, shifted = load_scan_candle_history(
+        project_dir=tmp_path, scan_plan=context["scan_plan"], symbol=first_history.symbol,
+        interval=first_history.interval, confirmation_close=first_history.confirmation_close,
+        history_start=first_history.history_start + timedelta(minutes=15),
+        sources=first_history.sources,
+    )
+    lineage = ScanHistoryLineage(context["scan_plan"].plan_hash)
+    lineage.require(shifted)
+    with pytest.raises(CandleInputError, match="origin changed"):
+        restore_source_bound_scan_day(**context, content_hash=hashes[-1], history_lineage=lineage)
+    print("Synthetic conflicting source-valid history origin rejected during restore", flush=True)
     raw = archive_path(tmp_path / "data/raw", seeds["15m"][1][0].spec)
     raw.write_bytes(raw.read_bytes() + b"synthetic corruption after successful report")
     with pytest.raises(CandleInputError, match="raw archive no longer matches"):
