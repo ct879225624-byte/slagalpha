@@ -134,7 +134,25 @@ mypy 131 文件、pip check 通过。没有请求下载、真实计算或交易�
 
 新增 17 项测试；全量 679 passed、1 skipped，Ruff、mypy 135 文件、pip check 通过。
 
-## 9. 后续边界
+## 9. 不可变来源保存与恢复（已实现）
+
+`research/scan_storage.py` 先重验整日来源，再将完整逐位 P6 证据保存到
+`data/manifests/scan_trade_plan_source/<hash>.json`，最后才发布
+`data/manifests/source_scan_day/<hash>.json`。完成记录独立于旧声明型 daily evidence 目录，
+避免把旧声明误认成已核验来源。相同内容可重试；既有不同字节拒绝覆盖。
+
+中途失败可能留下来源文件，但没有完成记录就不能恢复为完成日。已有完成记录却缺少来源
+时拒绝静默修补。加载检查规范 JSON、重复 key、完整模型和文件名身份；路径各层拒绝
+symlink/junction。`read_declared_scan_source` 只读取声明，不证明行情仍有效；
+`restore_source_bound_scan_day` 才会重新构建研究上下文并逐位重读原始行情、重算结果。
+
+持久化测试显式 mock 整日重算边界，分别验证失败传播、写入顺序、中断恢复、不可覆盖和
+路径限制；另验证自洽存储声明无法通过真实整日验证器。没有以存储测试冒充全日行情运行。
+首版显式按日保存完整证据，无自动全 DEV 批量写入；尚未做跨位源元数据去重或生产容量验收。
+
+新增 21 项测试；全量 700 passed、1 skipped，Ruff、mypy 137 文件、pip check 通过。
+
+## 10. 后续边界
 
 历史规则证据与实际种子边界验证齐备后，才进入真实 DEV 扫描与请求采集；不能靠更改
 状态字段、忽略缺口或把合成正向测试换标签来解锁。
