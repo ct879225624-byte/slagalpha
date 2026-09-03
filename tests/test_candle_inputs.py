@@ -27,7 +27,7 @@ from test_klines import source_row
 
 def _partition(
     root: Path, *, start: datetime = datetime(2024, 1, 1, tzinfo=UTC),
-    interval: str = "15m", rows: int = 3,
+    interval: str = "15m", rows: int = 3, close_prices: tuple[str, ...] | None = None,
 ) -> CandlePartitionSource:
     spec = ArchiveSpec.model_validate({
         "symbol": "BTCUSDT", "interval": interval, "year": start.year, "month": start.month,
@@ -37,6 +37,9 @@ def _partition(
     for index in range(rows):
         at = int(start.timestamp() * 1000) + index * delta
         row = source_row(at)
+        if close_prices is not None:
+            price = Decimal(close_prices[index])
+            row[1:5] = [str(price), str(price + 2), str(price - 2), str(price)]
         row[6] = str(at + delta - 1)
         raw_rows.append(",".join(row))
     archive = archive_path(root / "data/raw", spec)
