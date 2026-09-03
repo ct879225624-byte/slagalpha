@@ -180,7 +180,17 @@ symlink/junction。`read_declared_scan_source` 只读取声明，不证明行情
 
 新增 14 项测试；全量 731 passed、1 skipped，Ruff、mypy 140 文件、pip check 通过。
 
-## 12. 后续边界
+## 12. 无验证接口 mock 的端到端验收（已通过）
+
+独立 `acceptance/test_source_pipeline.py` 使用完整合成四天 split，实际跑完两个 DEV 日
+（一天空池、一天 95 位），不替换任何来源/策略/恢复/市场校验函数。最终 94 个 NO_SIGNAL、
+1 个 accepted plan，完成来源保存恢复、请求集合及 526 根 1m / 1 条 Funding 验收。
+之后修改临时 ZIP，旧报告复用被拒绝。两项验收均通过，耗时 351.00 秒。
+
+默认回归仍为 731 passed、1 skipped；慢验收显式运行，不改变原测试选择范围。
+命令、边界及合成数据说明见 `docs/p9-source-pipeline-acceptance.md`。
+
+## 13. 后续边界
 
 历史规则证据与实际种子边界验证齐备后，才进入真实 DEV 扫描与请求采集；不能靠更改
 状态字段、忽略缺口或把合成正向测试换标签来解锁。

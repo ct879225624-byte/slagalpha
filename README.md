@@ -89,3 +89,6 @@ The offline, source-revalidated P3–P6 scanner input path and its current limit
 documented in `docs/p9-scanner-input-contract.md`. Positive strategy paths are tested with
 explicit synthetic archives and rules; they do not approve historical seeds or real research.
 See `docs/development-checkpoint-2026-09-03.md` for the latest staged development checkpoint.
+
+The slower opt-in synthetic end-to-end check is documented in
+`docs/p9-source-pipeline-acceptance.md`; it uses real validators without approving real research.
