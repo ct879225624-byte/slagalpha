@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime
 from pathlib import Path
 from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from slagalpha.domain.universe import ContractRegistry, RegistryVerification, UniverseSnapshot
+from slagalpha.domain.universe import (
+    ContractRegistry,
+    ContractRegistryEntry,
+    RegistryVerification,
+    UniverseSnapshot,
+)
 from slagalpha.reporting.run_manifest import canonical_json_bytes
 from slagalpha.research.candle_inputs import CandleInputError
 from slagalpha.research.replay_inputs import (
@@ -92,6 +98,21 @@ class ScanTradePlanEvidence(BaseModel):
         return self
 
 
+def require_active_scan_rule(
+    *, registry: ContractRegistry, symbol: str, at: datetime,
+) -> ContractRegistryEntry:
+    """Select the exact slot's reviewed rule; a daily audit does not prove intraday coverage."""
+    matches = tuple(rule for rule in registry.entries if rule.symbol == symbol
+                    and rule.effective_from <= at
+                    and (rule.effective_to is None or at < rule.effective_to))
+    if (len(matches) != 1 or matches[0].verification_status is not RegistryVerification.VERIFIED
+        or matches[0].status != "TRADING" or matches[0].derived_first_candle_at > at
+        or (matches[0].onboard_date is not None and matches[0].onboard_date > at)
+        or (matches[0].inferred_delisted_at is not None and at >= matches[0].inferred_delisted_at)):
+        raise CandleInputError("one VERIFIED active historical rule is required before P6")
+    return matches[0]
+
+
 def compute_scan_trade_plan(
     *, project_dir: Path, scan_plan: DevScanPlan, plan: SensitivityPlan,
     split: ResearchSplitManifest, universe: UniverseSnapshot, registry: ContractRegistry,
@@ -114,15 +135,7 @@ def compute_scan_trade_plan(
         or not universe.effective_from <= at < universe.effective_to
         or history.symbol not in {member.symbol for member in universe.members}):
         raise CandleInputError("Trade Plan Universe differs from the exact scan slot")
-    matches = tuple(rule for rule in registry.entries if rule.symbol == history.symbol
-                    and rule.effective_from <= at
-                    and (rule.effective_to is None or at < rule.effective_to))
-    if (len(matches) != 1 or matches[0].verification_status is not RegistryVerification.VERIFIED
-        or matches[0].status != "TRADING" or matches[0].derived_first_candle_at > at
-        or (matches[0].onboard_date is not None and matches[0].onboard_date > at)
-        or (matches[0].inferred_delisted_at is not None and at >= matches[0].inferred_delisted_at)):
-        raise CandleInputError("one VERIFIED active historical rule is required before P6")
-    rule = matches[0]
+    rule = require_active_scan_rule(registry=registry, symbol=history.symbol, at=at)
     revalidate_scan_trigger(
         project_dir=project_dir, scan_plan=scan_plan, plan=plan, evidence=trigger_evidence,
     )
