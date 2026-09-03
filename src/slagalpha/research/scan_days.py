@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from slagalpha.domain.universe import ContractRegistry, UniverseSnapshot
+from slagalpha.research.candle_history import ScanHistoryLineage
 from slagalpha.research.candle_inputs import CandleInputError
 from slagalpha.research.parameters import DevParameterVersion
 from slagalpha.research.request_set import DevScanDayEvidence, build_dev_scan_day_evidence
@@ -39,6 +40,7 @@ def build_source_bound_scan_day(
     universe = next(item for item in snapshots if item.selected_at.date() == selection_date)
     source_iterator = iter(sources)
     exhausted = object()
+    lineage = ScanHistoryLineage(scan_plan.plan_hash)
     records = []
     for index in range(day.time_count):
         at = day.first_confirmation + timedelta(minutes=15 * index)
@@ -55,6 +57,8 @@ def build_source_bound_scan_day(
                 symbol, at, scan_plan.plan_hash, day.universe_content_hash, parameter.content_hash,
             ):
                 raise CandleInputError("daily scan source does not match its exact ordered slot")
+            for feature in source.trigger_evidence.setup_evidence.features:
+                lineage.require(feature.history)
             # This boundary validates the complete model, rereads ZIP/Parquet and recomputes P3-P6.
             records.append(build_source_bound_scan_record(
                 project_dir=project_dir, scan_plan=scan_plan, plan=plan, split=split,

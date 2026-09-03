@@ -6,6 +6,7 @@ use them; the real adapter rejects them. This module never claims a full raw-dat
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -13,7 +14,10 @@ from typing import Any
 
 import pytest
 
+from slagalpha.data.klines import INTERVAL_MILLISECONDS
 from slagalpha.domain.universe import ContractRegistry, RegistryVerification
+from slagalpha.reporting.run_manifest import canonical_json_bytes
+from slagalpha.research.candle_history import ScanCandleHistory, last_closed_boundary
 from slagalpha.research.candle_inputs import CandleInputError
 from slagalpha.research.parameters import build_dev_parameter_version
 from slagalpha.research.request_set import DevScanRecord, build_dev_scan_day_evidence
@@ -24,8 +28,26 @@ from slagalpha.research.scan_trade_plan import ScanTradePlanEvidence, compute_sc
 from slagalpha.research.sensitivity import build_default_sensitivity_plan
 from slagalpha.research.splits import audit_research_inputs
 from test_research_splits import _hash
+from test_scan_history_lineage import _history_rehash
 from test_scan_plan import _scan_context
 from test_scan_trade_plan import _trade_context
+
+
+def _stub_history_at(history: ScanCandleHistory, at: datetime) -> ScanCandleHistory:
+    """Valid receipt geometry only; copied content claims are NOT source-verified evidence."""
+    end = last_closed_boundary(at, history.interval)
+    payload = history.model_dump(mode="json", exclude={"content_hash"})
+    payload.update(
+        confirmation_close=at.isoformat().replace("+00:00", "Z"),
+        last_close_exclusive=end.isoformat().replace("+00:00", "Z"),
+        row_count=int((end - history.history_start)
+                      / timedelta(milliseconds=INTERVAL_MILLISECONDS[history.interval])),
+        sources=[item.model_dump(mode="json") for item in history.sources
+                 if item.spec.period <= (end - timedelta(microseconds=1)).strftime("%Y-%m")],
+    )
+    return ScanCandleHistory.model_validate({
+        **payload, "content_hash": hashlib.sha256(canonical_json_bytes(payload)).hexdigest(),
+    })
 
 
 @pytest.fixture(scope="module")
@@ -45,11 +67,9 @@ def sample_day(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
     for index in range(day.time_count):
         at = day.first_confirmation + timedelta(minutes=15 * index)
         setup = real_source.trigger_evidence.setup_evidence
-        feature = setup.features[0]
-        stub_feature = feature.model_copy(update={
-            "history": feature.history.model_copy(update={"confirmation_close": at}),
-        })
-        stub_setup = setup.model_copy(update={"features": (stub_feature, *setup.features[1:])})
+        stub_setup = setup.model_copy(update={"features": tuple(feature.model_copy(update={
+            "history": _stub_history_at(feature.history, at),
+        }) for feature in setup.features)})
         stubs.append(real_source.model_copy(update={
             "trigger_evidence": real_source.trigger_evidence.model_copy(update={
                 "setup_evidence": stub_setup,
@@ -231,3 +251,34 @@ def test_not_ready_slot_is_preserved_as_blocked(
     result = build_source_bound_scan_day(**sample_day)
     assert len(result.records) == 96
     assert all(record.outcome == "BLOCKED" for record in result.records)
+
+
+@pytest.mark.parametrize("interval_index", range(4))
+@pytest.mark.parametrize("change", ["origin", "partition"])
+def test_daily_lineage_drift_is_rejected_even_for_no_signal_slots(
+    sample_day: dict[str, Any], slot_calls: list[dict[str, Any]],
+    interval_index: int, change: str,
+) -> None:
+    sources = list(sample_day["sources"])
+    source = sources[1]
+    setup = source.trigger_evidence.setup_evidence
+    features = list(setup.features)
+    history = features[interval_index].history
+    payload = history.model_dump(mode="json")
+    if change == "origin":
+        step = timedelta(milliseconds=INTERVAL_MILLISECONDS[history.interval])
+        payload["history_start"] = (history.history_start + step).isoformat().replace("+00:00", "Z")
+        payload["row_count"] -= 1
+    else:
+        payload["sources"][0]["normalization"]["parquet_sha256"] = "0" * 64
+    features[interval_index] = features[interval_index].model_copy(update={
+        "history": _history_rehash(payload),
+    })
+    sources[1] = source.model_copy(update={
+        "trigger_evidence": source.trigger_evidence.model_copy(update={
+            "setup_evidence": setup.model_copy(update={"features": tuple(features)}),
+        }),
+    })
+    with pytest.raises(CandleInputError, match="origin changed|partition receipt changed"):
+        build_source_bound_scan_day(**{**sample_day, "sources": tuple(sources)})
+    assert len(slot_calls) == 1

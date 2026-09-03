@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal, Self
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
 
 from slagalpha.data.klines import INTERVAL_MILLISECONDS, _normalized_content_hash
 from slagalpha.domain.symbols import normalize_symbol
@@ -19,7 +19,7 @@ from slagalpha.research.candle_inputs import (
     load_verified_candle_partition,
 )
 from slagalpha.research.replay_inputs import Sha256
-from slagalpha.research.scan_plan import DevScanPlan
+from slagalpha.research.scan_plan import DevScanPlan, model_hash
 
 ScanInterval = Literal["15m", "1h", "4h", "1d"]
 
@@ -98,6 +98,35 @@ class ScanCandleHistory(BaseModel):
         if self.content_hash != hashlib.sha256(canonical_json_bytes(payload)).hexdigest():
             raise ValueError("history content hash mismatch")
         return self
+
+
+class ScanHistoryLineage:
+    """Keep one declared origin and frozen monthly receipts per stream within a scan plan.
+
+    This in-memory consistency check neither approves the origin nor caches raw verification.
+    New months can extend a prefix; an already observed month or origin cannot be replaced.
+    """
+
+    def __init__(self, scan_plan_hash: str) -> None:
+        self.scan_plan_hash = TypeAdapter(Sha256).validate_python(scan_plan_hash)
+        self._origins: dict[tuple[str, ScanInterval], datetime] = {}
+        self._partitions: dict[tuple[str, ScanInterval, str], str] = {}
+
+    def require(self, history: ScanCandleHistory) -> None:
+        history = ScanCandleHistory.model_validate(history.model_dump(mode="json"))
+        if history.scan_plan_hash != self.scan_plan_hash:
+            raise CandleInputError("history lineage belongs to a different scan plan")
+        stream = (history.symbol, history.interval)
+        if self._origins.get(stream, history.history_start) != history.history_start:
+            raise CandleInputError("scan history origin changed within the same input lineage")
+        partitions = {(history.symbol, history.interval, source.spec.period): model_hash(source)
+                      for source in history.sources}
+        if any(key in self._partitions and self._partitions[key] != digest
+               for key, digest in partitions.items()):
+            raise CandleInputError("scan history partition receipt changed within the same lineage")
+        # Commit only after every comparison passes; errors do not silently reset the origin.
+        self._origins[stream] = history.history_start
+        self._partitions.update(partitions)
 
 
 def load_scan_candle_history(
