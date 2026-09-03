@@ -16,6 +16,12 @@ from slagalpha.research.request_set import (
     DevScanDayEvidence,
     build_dev_replay_request_set,
 )
+from slagalpha.research.request_set_market_data import (
+    DevRequestMarketDataPair,
+    DevRequestSetMarketDataReport,
+    require_request_set_market_data_report_binding,
+    verify_dev_request_set_market_data,
+)
 from slagalpha.research.scan_plan import DevScanPlan
 from slagalpha.research.scan_storage import restore_source_bound_scan_day
 from slagalpha.research.sensitivity import SensitivityPlan
@@ -68,3 +74,37 @@ def require_source_bound_replay_request_set(
     )
     if observed != request_set:
         raise CandleInputError("saved request set differs from the complete recomputed sources")
+
+
+def verify_source_bound_request_set_market_data(
+    *, project_dir: Path, request_set: DevReplayRequestSet,
+    pairs: tuple[DevRequestMarketDataPair, ...], scan_plan: DevScanPlan,
+    split: ResearchSplitManifest, plan: SensitivityPlan, parameter: DevParameterVersion,
+    snapshots: tuple[UniverseSnapshot, ...], registry: ContractRegistry,
+) -> DevRequestSetMarketDataReport:
+    """Recompute source days before verifying every saved 1m/Funding response pair."""
+    return verify_dev_request_set_market_data(
+        project_dir=project_dir, request_set=request_set, pairs=pairs, scan_plan=scan_plan,
+        evidence=_restored_scan_days(
+            project_dir=project_dir, day_hashes=request_set.day_evidence_hashes,
+            scan_plan=scan_plan,
+            split=split, plan=plan, parameter=parameter, snapshots=snapshots, registry=registry,
+        ), split=split, plan=plan, parameter=parameter, snapshots=snapshots, registry=registry,
+    )
+
+
+def require_source_bound_market_data_report(
+    report: DevRequestSetMarketDataReport, *, project_dir: Path, request_set: DevReplayRequestSet,
+    scan_plan: DevScanPlan, split: ResearchSplitManifest, plan: SensitivityPlan,
+    parameter: DevParameterVersion, snapshots: tuple[UniverseSnapshot, ...],
+    registry: ContractRegistry,
+) -> None:
+    """Even a saved matching report requires fresh source and market-response validation."""
+    require_request_set_market_data_report_binding(
+        report, project_dir=project_dir, request_set=request_set, scan_plan=scan_plan,
+        evidence=_restored_scan_days(
+            project_dir=project_dir, day_hashes=request_set.day_evidence_hashes,
+            scan_plan=scan_plan,
+            split=split, plan=plan, parameter=parameter, snapshots=snapshots, registry=registry,
+        ), split=split, plan=plan, parameter=parameter, snapshots=snapshots, registry=registry,
+    )
