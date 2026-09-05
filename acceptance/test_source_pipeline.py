@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from collections.abc import Iterator
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from slagalpha.data.archive import archive_path
 from slagalpha.data.klines import INTERVAL_MILLISECONDS
 from slagalpha.domain.universe import ContractRegistry, RegistryVerification
 from slagalpha.research.candle_history import (
+    ScanCandleHistory,
     ScanHistoryLineage,
     ScanInterval,
     last_closed_boundary,
@@ -23,8 +25,8 @@ from slagalpha.research.candle_inputs import CandleInputError, CandlePartitionSo
 from slagalpha.research.parameters import build_dev_parameter_version
 from slagalpha.research.replay_market_data import build_replay_market_data_artifact
 from slagalpha.research.request_set_market_data import DevRequestMarketDataPair
-from slagalpha.research.scan_days import build_source_bound_scan_day
-from slagalpha.research.scan_plan import build_dev_scan_plan
+from slagalpha.research.scan_days import compute_source_bound_scan_day
+from slagalpha.research.scan_plan import DevScanDayPlan, build_dev_scan_plan
 from slagalpha.research.scan_slot import compute_source_bound_scan_slot
 from slagalpha.research.scan_storage import (
     restore_source_bound_scan_day,
@@ -124,7 +126,9 @@ def _prepare(root: Path) -> tuple[dict[str, Any], SeedInputs]:
     return context, seeds
 
 
-def _source(context: dict[str, Any], seeds: SeedInputs, at: datetime) -> ScanTradePlanEvidence:
+def _histories(
+    context: dict[str, Any], seeds: SeedInputs, at: datetime,
+) -> tuple[ScanCandleHistory, ...]:
     histories = []
     for interval, (start, sources) in seeds.items():
         _, history = load_scan_candle_history(
@@ -133,7 +137,24 @@ def _source(context: dict[str, Any], seeds: SeedInputs, at: datetime) -> ScanTra
             history_start=start, sources=sources,
         )
         histories.append(history)
-    return compute_source_bound_scan_slot(**context, histories=tuple(histories))
+    return tuple(histories)
+
+
+def _source(context: dict[str, Any], seeds: SeedInputs, at: datetime) -> ScanTradePlanEvidence:
+    return compute_source_bound_scan_slot(**context, histories=_histories(context, seeds, at))
+
+
+def _day_histories(
+    context: dict[str, Any], seeds: SeedInputs, day: DevScanDayPlan,
+) -> Iterator[tuple[ScanCandleHistory, ...]]:
+    for index in range(day.time_count):
+        at = day.first_confirmation + timedelta(minutes=15 * index)
+        for symbol in day.symbols:
+            assert symbol == "BTCUSDT"
+            yield _histories(context, seeds, at)
+        if day.symbols and (index + 1) % 12 == 0:
+            print(json.dumps({"synthetic_slots_computed_and_revalidated": index + 1,
+                              "expected_slots": day.record_count}), flush=True)
 
 
 def test_synthetic_fixture_has_one_source_computed_accepted_plan(tmp_path: Path) -> None:
@@ -149,20 +170,12 @@ def test_complete_synthetic_source_pipeline_without_mocked_validators(tmp_path: 
     hashes = []
     outcomes: Counter[str] = Counter()
     for day in context["scan_plan"].days:
-        sources = []
-        for index in range(day.time_count):
-            at = day.first_confirmation + timedelta(minutes=15 * index)
-            for symbol in day.symbols:
-                assert symbol == "BTCUSDT"
-                sources.append(_source(context, seeds, at))
-            if day.symbols and (index + 1) % 12 == 0:
-                print(json.dumps({"synthetic_slots_computed": index + 1,
-                                  "expected_slots": day.record_count}), flush=True)
-        evidence = build_source_bound_scan_day(
-            **context, selection_date=day.selection_date, sources=tuple(sources),
+        evidence, sources = compute_source_bound_scan_day(
+            **context, selection_date=day.selection_date,
+            history_bundles=_day_histories(context, seeds, day),
         )
         outcomes.update(record.outcome for record in evidence.records)
-        save_source_bound_scan_day(evidence, **context, sources=tuple(sources))
+        save_source_bound_scan_day(evidence, **context, sources=sources)
         hashes.append(evidence.content_hash)
         print(json.dumps({"synthetic_day_saved": str(day.selection_date),
                           "record_count": len(evidence.records)}), flush=True)

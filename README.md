@@ -88,9 +88,11 @@ checkout does not itself make that checkout dirty. No remote push is part of thi
 The offline, source-revalidated P3–P6 scanner input path and its current limitations are
 documented in `docs/p9-scanner-input-contract.md`. Positive strategy paths are tested with
 explicit synthetic archives and rules; they do not approve historical seeds or real research.
-See `docs/development-checkpoint-2026-09-03.md` for the latest staged development checkpoint.
+See `docs/development-checkpoint-2026-09-05.md` for the latest staged development checkpoint.
 
 The slower opt-in synthetic end-to-end check is documented in
 `docs/p9-source-pipeline-acceptance.md`; it uses real validators without approving real research.
-It invokes `research.scan_slot.compute_source_bound_scan_slot` for P3–P6 computation;
-the entry checks the complete research context and exact slot before rereading declared histories.
+It invokes `research.scan_days.compute_source_bound_scan_day` for complete daily computation
+and revalidation, using `research.scan_slot.compute_source_bound_scan_slot` for each P3–P6 slot.
+The entries check the complete research context and exact positions before consuming declared
+history bundles; a day is returned only after every required position passes.

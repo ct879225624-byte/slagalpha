@@ -255,6 +255,10 @@ Ruff、mypy 146 文件、pip check 通过；历史来源一致不意味着种子
 
 全仓 812 passed、1 skipped（219.91 秒）；Ruff、mypy 147 文件、pip check 通过。
 
+2026-09-05 完整合成验收改用该入口，两项通过（568.69 秒）：95 位、94 个 NO_SIGNAL、
+1 个 accepted plan，以及来源保存恢复、526 根 1m / 1 条 Funding 和两类来源反例均通过。
+详见 `docs/p9-source-pipeline-acceptance.md`；仍为一个空池日加一个活跃日的合成验收。
+
 ## 17. 后续边界
 
 历史规则证据与实际种子边界验证齐备后，才进入真实 DEV 扫描与请求采集；不能靠更改
