@@ -92,7 +92,7 @@ See `docs/development-checkpoint-2026-09-05.md` for the latest staged developmen
 
 The slower opt-in synthetic end-to-end check is documented in
 `docs/p9-source-pipeline-acceptance.md`; it uses real validators without approving real research.
-It invokes `research.scan_days.compute_source_bound_scan_day` for complete daily computation
-and revalidation, using `research.scan_slot.compute_source_bound_scan_slot` for each P3–P6 slot.
-The entries check the complete research context and exact positions before consuming declared
-history bundles; a day is returned only after every required position passes.
+It invokes `research.source_request_set.compute_source_bound_request_set_with_checkpoints` for
+ordered cross-day computation and immutable daily checkpoints. That entry uses
+`research.scan_days.compute_source_bound_scan_day` and the per-slot P3–P6 computation path.
+The complete request set is returned only after every required DEV day and slot passes.

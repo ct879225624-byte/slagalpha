@@ -68,7 +68,7 @@ pip check 和 diff 检查通过。中断前全量回归为 835 passed、1 failed
 （330.90 秒）。Ruff、mypy 148 文件、pip check、diff 检查通过；只读 preflight 正确
 恢复为历史规则和 dirty worktree 阻断，不再报告环境错误。
 
-未提交文件：
+第 19 项提交 `519a7ac`，包含：
 
 - `src/slagalpha/research/source_request_set.py`：跨日正式顺序入口。
 - `tests/test_scan_execution.py`：24 项顺序、失败、来源链与真实空池检查点测试。
@@ -76,5 +76,25 @@ pip check 和 diff 检查通过。中断前全量回归为 835 passed、1 failed
 - `docs/p9-source-pipeline-acceptance.md`：当前解释器与验收解释边界。
 - `docs/development-checkpoint-2026-09-05.md`：本恢复记录。
 
-以上五个文件已达到第 19 项提交条件。下一项是把完整合成来源验收改用跨日入口，确认
-正式入口返回的请求集合可直接进入 1m/Funding 市场数据验收，并保留所有来源反例。
+下一项是把完整合成来源验收改用跨日入口，确认正式入口返回的请求集合可直接进入
+1m/Funding 市场数据验收，并保留所有来源反例。
+
+## 第 20 项：跨日入口完整合成验收（完成）
+
+验收改为向 `compute_source_bound_request_set_with_checkpoints` 惰性提供两个 DEV 日及其
+四周期历史流，由正式入口逐日计算、保存并直接返回完整请求集合。随后使用共享来源链
+恢复两日结果核对 outcome，再将同一请求集合接入 1m/Funding 验收。起点冲突和 ZIP
+篡改反例保留；单扫描位 accepted 正向测试保持不变。
+
+开始慢验收前，第 19 项已提交，工作区只有本项验收和 checkpoint 改动。Ruff、mypy
+148 文件和 diff 检查通过；在隔离 CPython 3.12.13 环境显式运行两项端到端验收，
+全部通过（495.86 秒）。
+
+跨日入口完成一个空池日和一个 95 位活跃日，直接返回完整请求集合；恢复结果仍为
+94 个 NO_SIGNAL、1 个 accepted plan。随后 526 根合成 1m 与 1 条 Funding 验收通过，
+经原始校验但起点冲突的前缀和成功报告后的 ZIP 篡改均正确拒绝。来源 JSON 合计
+3,111,141 bytes；包含运行凭证，不是跨运行尺寸不变量或全 DEV 容量证明。
+
+本项只改变验收接线和进度文档，不改变生产公式、schema、冻结规则、历史种子或授权状态。
+整体保持 9/14（约 64%）、P9 1/4。下一步在干净提交上复跑只读 preflight 与输入语义
+门禁，确认剩余阻断仍全部来自真实规则/数据，而不是本批工程接线。

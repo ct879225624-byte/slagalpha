@@ -25,17 +25,16 @@ from slagalpha.research.candle_inputs import CandleInputError, CandlePartitionSo
 from slagalpha.research.parameters import build_dev_parameter_version
 from slagalpha.research.replay_market_data import build_replay_market_data_artifact
 from slagalpha.research.request_set_market_data import DevRequestMarketDataPair
-from slagalpha.research.scan_days import compute_source_bound_scan_day
 from slagalpha.research.scan_plan import DevScanDayPlan, build_dev_scan_plan
 from slagalpha.research.scan_slot import compute_source_bound_scan_slot
 from slagalpha.research.scan_storage import (
+    read_declared_scan_source,
     restore_source_bound_scan_day,
-    save_source_bound_scan_day,
 )
 from slagalpha.research.scan_trade_plan import ScanTradePlanEvidence
 from slagalpha.research.sensitivity import build_default_sensitivity_plan
 from slagalpha.research.source_request_set import (
-    build_source_bound_replay_request_set,
+    compute_source_bound_request_set_with_checkpoints,
     require_source_bound_market_data_report,
     verify_source_bound_request_set_market_data,
 )
@@ -157,6 +156,15 @@ def _day_histories(
                               "expected_slots": day.record_count}), flush=True)
 
 
+def _history_days(
+    context: dict[str, Any], seeds: SeedInputs,
+) -> Iterator[tuple[date, Iterator[tuple[ScanCandleHistory, ...]]]]:
+    for day in context["scan_plan"].days:
+        yield day.selection_date, _day_histories(context, seeds, day)
+        print(json.dumps({"synthetic_day_computed_and_saved": str(day.selection_date),
+                          "record_count": day.record_count}), flush=True)
+
+
 def test_synthetic_fixture_has_one_source_computed_accepted_plan(tmp_path: Path) -> None:
     context, seeds = _prepare(tmp_path)
     source = _source(context, seeds, TRIGGER_AT)
@@ -167,22 +175,28 @@ def test_synthetic_fixture_has_one_source_computed_accepted_plan(tmp_path: Path)
 
 def test_complete_synthetic_source_pipeline_without_mocked_validators(tmp_path: Path) -> None:
     context, seeds = _prepare(tmp_path)
-    hashes = []
-    outcomes: Counter[str] = Counter()
-    for day in context["scan_plan"].days:
-        evidence, sources = compute_source_bound_scan_day(
-            **context, selection_date=day.selection_date,
-            history_bundles=_day_histories(context, seeds, day),
-        )
-        outcomes.update(record.outcome for record in evidence.records)
-        save_source_bound_scan_day(evidence, **context, sources=sources)
-        hashes.append(evidence.content_hash)
-        print(json.dumps({"synthetic_day_saved": str(day.selection_date),
-                          "record_count": len(evidence.records)}), flush=True)
-    assert outcomes == {"NO_SIGNAL": 94, "ACCEPTED_PLAN": 1}
-    print("Recomputing all saved synthetic days into a complete request set", flush=True)
-    request_set = build_source_bound_replay_request_set(**context, day_hashes=tuple(hashes))
+    print("Computing and checkpointing every synthetic DEV day", flush=True)
+    request_set = compute_source_bound_request_set_with_checkpoints(
+        **context, history_days=_history_days(context, seeds),
+    )
     assert request_set.scan_record_count == 95 and len(request_set.requests) == 1
+    assert request_set.strategy_evidence_verified is request_set.research_authorized is False
+    assert request_set.download_authorized is False
+
+    print("Restoring all synthetic days and checking complete outcomes", flush=True)
+    outcomes: Counter[str] = Counter()
+    lineage = ScanHistoryLineage(context["scan_plan"].plan_hash)
+    restored = []
+    for day, digest in zip(
+        context["scan_plan"].days, request_set.day_evidence_hashes, strict=True,
+    ):
+        evidence = restore_source_bound_scan_day(
+            **context, content_hash=digest, history_lineage=lineage,
+        )
+        assert evidence.day_plan == day
+        restored.append(evidence)
+        outcomes.update(record.outcome for record in evidence.records)
+    assert outcomes == {"NO_SIGNAL": 94, "ACCEPTED_PLAN": 1}
     request = request_set.requests[0]
     assert request.start == TRIGGER_AT
     minute = _response(tmp_path, request, _klines(request), name="synthetic-minutes.json")
@@ -209,7 +223,11 @@ def test_complete_synthetic_source_pipeline_without_mocked_validators(tmp_path: 
                           "data/manifests/scan_trade_plan_source/*.json"
                       ))}), flush=True)
     # A shared context must reject a conflicting (but independently source-valid) origin.
-    first_history = sources[0].trigger_evidence.setup_evidence.features[0].history
+    first_record = restored[-1].records[0]
+    first_source = read_declared_scan_source(
+        project_dir=tmp_path, content_hash=first_record.upstream_evidence_hash,
+    )
+    first_history = first_source.trigger_evidence.setup_evidence.features[0].history
     _, shifted = load_scan_candle_history(
         project_dir=tmp_path, scan_plan=context["scan_plan"], symbol=first_history.symbol,
         interval=first_history.interval, confirmation_close=first_history.confirmation_close,
@@ -219,7 +237,9 @@ def test_complete_synthetic_source_pipeline_without_mocked_validators(tmp_path: 
     lineage = ScanHistoryLineage(context["scan_plan"].plan_hash)
     lineage.require(shifted)
     with pytest.raises(CandleInputError, match="origin changed"):
-        restore_source_bound_scan_day(**context, content_hash=hashes[-1], history_lineage=lineage)
+        restore_source_bound_scan_day(
+            **context, content_hash=request_set.day_evidence_hashes[-1], history_lineage=lineage,
+        )
     print("Synthetic conflicting source-valid history origin rejected during restore", flush=True)
     raw = archive_path(tmp_path / "data/raw", seeds["15m"][1][0].spec)
     raw.write_bytes(raw.read_bytes() + b"synthetic corruption after successful report")
