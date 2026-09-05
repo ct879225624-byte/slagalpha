@@ -98,3 +98,18 @@ pip check 和 diff 检查通过。中断前全量回归为 835 passed、1 failed
 本项只改变验收接线和进度文档，不改变生产公式、schema、冻结规则、历史种子或授权状态。
 整体保持 9/14（约 64%）、P9 1/4。下一步在干净提交上复跑只读 preflight 与输入语义
 门禁，确认剩余阻断仍全部来自真实规则/数据，而不是本批工程接线。
+
+## 第 21 项：干净提交准备度复核（完成）
+
+第 20 项提交 `b0a3e35`，检查时工作区干净。冻结 CPython 3.12.13 环境运行只读
+preflight，报告 `87541bdb21190c73b64d17a4ae2e74d5240ea81b602fe4d42ac851a3849269ad`；
+Git 提交与环境锁通过，只剩 `NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS`。
+
+输入语义报告仍为
+`095a2f2e7d33e2e5247a5656a919c9fec15b38daa4e86e320331b0dd4f9f20fd`：11 类角色通过，
+多周期 Candle、1m Candle、Funding 三类 deferred；18 个递归历史依赖阻断原样保留。
+报告保持 `research_authorized=false`、`strategy_executed=false`、
+`locked_test_consumed=false`。未运行研究、下载行情、修改证据或打开任何授权。
+
+结论：第 17–20 项接线没有增加语义门禁错误；下一实质步骤需要历史规则证据及实际
+多周期递归种子材料。整体仍为 9/14（约 64%）、P9 1/4。

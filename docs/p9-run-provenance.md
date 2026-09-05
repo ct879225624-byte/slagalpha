@@ -101,3 +101,13 @@ artifacts/runs/<run_id>/
 新增测试：运行记录 35 项、前检 8 项、环境锁 21 项，共 64 项。Git 正例提交只发生在
 临时测试仓库。上述验收时本项目尚未创建提交；后续经用户授权的首次基线与提交后
 检查见 `docs/git-baseline.md` 和其本地回执。真实回测、锁定测试和真实下单均未执行。
+
+## 2026-09-05 当前提交复核
+
+在隔离 CPython 3.12.13 与 29 个冻结 wheel 环境，对提交 `b0a3e35` 运行只读前检；
+工作区为干净状态，环境锁和策略规则哈希通过。报告：
+
+`87541bdb21190c73b64d17a4ae2e74d5240ea81b602fe4d42ac851a3849269ad`
+
+唯一 blocker 为 `NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS`，属于既有真实输入
+阻断。退出 1 符合预期；未运行研究或消费 LOCKED_TEST。
