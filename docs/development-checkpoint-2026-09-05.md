@@ -113,3 +113,26 @@ Git 提交与环境锁通过，只剩 `NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMB
 
 结论：第 17–20 项接线没有增加语义门禁错误；下一实质步骤需要历史规则证据及实际
 多周期递归种子材料。整体仍为 9/14（约 64%）、P9 1/4。
+
+## 第 22 项：冻结环境恢复脚本（完成，2026-09-07 安全恢复点）
+
+第 21 项提交 `fdce391`，开始本项时工作区干净。新增
+`scripts/p9_restore_frozen_environment.ps1`，固定 CPython 3.12.13、uv 0.12.10、
+bootstrap 工件哈希、环境锁及依赖 manifest；默认只在项目外 Temp 目录创建隔离环境，
+不修改现有 `.venv`、系统 PATH 或注册表。依赖只从已冻结的 29 个本地 wheel 安装，
+安装后重读完整 wheel manifest、环境锁并执行 `pip check`。
+
+已有隔离环境的幂等复验和默认 Temp 目录的从零 bootstrap 均成功，最终输出 `READY`；
+CPython 为 3.12.13，29 个冻结 wheel 安装完成，环境锁仍为
+`8c3d1ef3887544516ac06fa3efe7f9bcfc2b81b1f56b1da267cafa6a24574ee7`，
+`pip check` 通过。项目内安装路径（含不同大小写）正确失败关闭，PowerShell 语法通过。
+
+恢复后的默认环境运行全量回归：836 passed、1 skipped（368.92 秒）；唯一跳过仍是
+Windows 环境不可创建符号链接。Ruff 全部通过，mypy 128 个源码文件通过。修改仅包含
+恢复脚本、README、本依赖恢复文档和此 checkpoint；未修改冻结规则、策略、依赖锁、
+证据或授权状态，也未运行真实研究、锁定测试、行情下载、push 或部署。
+
+下一任务不是新增工程功能，而是 P9 真实输入解除阻断：需要权威历史合约规则、完整实际
+多周期来源及已审核的 18 个 ATR 递归历史依赖，再生成并验收真实 1m/Funding 请求数据。
+材料未具备时应继续保持 `research_authorized=false`，不得启动参数研究或 LOCKED_TEST。
+整体仍为 9/14（约 64%）、P9 1/4。

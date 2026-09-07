@@ -78,8 +78,19 @@ The preflight command checks the frozen inputs, read-only Git state and the exac
 environment recorded in `requirements.lock`. Exit 1 means expected research blockers;
 exit 2 means a lock/input error. It never starts research, changes Git or installs packages.
 The lock targets CPython 3.12.13 on Windows AMD64, not Ubuntu deployment, and pins versions
-without wheel/source artifact hashes. See `docs/p9-run-provenance.md` for DEV RunManifest
-storage, recovery behavior and remaining validation boundaries.
+without hashes in the lock file itself. The frozen wheel manifest supplies the installation
+artifact hashes. If the default `.venv` no longer uses CPython 3.12.13, restore an isolated
+verification environment outside the checkout with:
+
+```powershell
+pwsh -NoProfile -File scripts\p9_restore_frozen_environment.ps1
+```
+
+Use the `venv_python` path from the final `READY` JSON for P9 verification commands. The
+script pins and verifies the bootstrap tool, installs the exact interpreter without changing
+PATH or the registry, and installs all dependencies from the frozen local wheels. It does not
+authorize or start research. See `docs/p9-dependency-artifacts.md` and
+`docs/p9-run-provenance.md` for the artifact and RunManifest boundaries.
 
 The local Git baseline procedure and its acceptance receipt are documented in
 `docs/git-baseline.md`. Generated preflight reports are ignored so checking a clean

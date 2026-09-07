@@ -32,6 +32,26 @@ Windows AMD64 CPython 的已支持 wheel 标签，不宣称是 Ubuntu 部署锁�
 安装包字节，不是发布者签名，也不证明已经安装的每个文件均来自这些 wheel。
 dry-run 验证兼容性、依赖解析与哈希，不等于实际重建新环境；本次没有重装当前环境。
 
+## 冻结环境恢复
+
+Python.org 的 CPython 3.12.13 Windows 版本只有源代码发布，没有官方 Windows 安装包。
+项目使用固定的 Astral `uv 0.12.10` 在项目目录外安装对应的
+`python-build-standalone` 运行时，并从上述 29 个本地 wheel 离线恢复依赖：
+
+```powershell
+pwsh -NoProfile -File scripts\p9_restore_frozen_environment.ps1
+```
+
+默认安装到系统 Temp 下的 `slagalpha-python-31213`，也可用 `-InstallRoot` 指定另一个
+项目外目录。脚本固定并检查 uv ZIP、uv 可执行文件、`requirements.lock`、依赖 manifest
+及每个 wheel 的 SHA-256；环境依赖安装使用 `--no-index --require-hashes`。它不会替换
+现有 `.venv`，不会注册系统 Python、修改 PATH、写入 Git 数据目录或打开研究授权。
+
+脚本成功时输出一行 `status=READY` 的 JSON，其中 `venv_python` 是后续命令应使用的
+解释器路径，`research_authorized` 固定为 `false`。重复运行会重新核验并复用相同环境；
+冻结文件、工具、解释器或已安装包版本不一致时失败关闭。uv 和 Python 仅在对应的固定
+工件不存在时联网获取，依赖包始终只读取项目内已验收的本地 wheel。
+
 ## 研究门禁影响
 
 依赖工件类别已通过语义检查，内容缺失类别从 3 减为 2（1m、Funding）。
