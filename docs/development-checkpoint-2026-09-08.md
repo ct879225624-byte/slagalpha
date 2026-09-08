@@ -1,7 +1,8 @@
 # 开发续接记录：2026-09-08
 
-续接提交 `2aa61a9`，开始时工作区干净。第 22 项冻结 CPython 3.12.13 环境恢复脚本
-已完成并提交，不重复执行。本轮继续 P9 真实输入解除阻断；研究、下载和交易授权保持关闭。
+续接提交 `2aa61a9`，第 23 项已提交为 `4716682`。第 24 项开始时确认工作区干净、
+HEAD 为 `4716682`；第 22、23 项均不重复执行。本轮继续 P9 真实输入解除阻断；研究、
+下载和交易授权保持关闭。
 
 ## 第 23 项：真实输入与首个可解决缺口复核（完成）
 
@@ -33,10 +34,38 @@
 - 仓库没有真实 accepted request set、1m/Funding 响应或聚合工件；这些数据必须等待
   合法 P6 请求生成，不能提前手选或下载。
 
+## 第 24 项：重上线生命周期边界审计（完成）
+
+新增独立的 lifecycle-boundary-audit，只读比较 normalization failure 对应的主 symbol 与
+`*SETTLED` 原始 ZIP，并绑定 contract identity registry。内容寻址报告为
+`a8caec19488f3e875da8f2c548c8d7c7214c2365765b6bf7d3ae02282212c818`。
+
+- AIA、CTK、CVC、CVX、LIT、MAVIA、PUMP、SLP 的 15m/1h/4h 断层右端均与
+  `effective_from` 所属周期桶一致，SETTLED 行只位于主断层内；8/8 标记为
+  `CONFIRMED_RELIST_BOUNDARY`。
+- AERGO 虽有相似断层及 SETTLED ZIP，但没有 registry identity 边界，保持
+  `UNRESOLVED`，未从行情反推生命周期。
+- 8 个已确认标的的主 1d 月文件均包含边界日前旧行和边界日起新行，并与 SETTLED
+  共享一个内容不同的边界日桶；全部标记为 `MIXED_OLD_LIFECYCLE` 并继续阻断。
+- 报告保存 72 个 ZIP 的文件/行内容哈希、时间范围、断层和重叠计数；重复发布不可变。
+- 合成测试覆盖确认正例、缺 identity 反例、registry 与断层右端不一致反例。
+- normalization result 未修改；ATR reset、history seed、历史规则放行、研究、策略执行、
+  locked test 消费均为 false。完整结论见 `docs/p9-lifecycle-boundary-audit.md`。
+
+验证结果：
+
+- 冻结 CPython 3.12.13：完整 pytest `839 passed, 1 skipped`；skip 为 Windows 环境不可
+  创建 symlink 的既有场景。
+- 第 24 项专项 pytest：`3 passed`；Ruff 全仓通过；mypy 全仓 `130 source files` 通过。
+- lifecycle audit 用冻结环境复跑仍得到同一报告哈希 `a8caec...c818`，预期返回码为 1。
+- 默认 `.venv` 当前为 CPython 3.12.14，完整套件为 `838 passed, 1 skipped, 1 failed`；
+  唯一失败是 environment-lock 合成测试拒绝非冻结解释器。同一用例在冻结 3.12.13 环境
+  单独及完整运行均通过，未修改该既有门禁测试。
+
 ## 下一项
 
-第 24 项只实现“重上线生命周期边界审计”：核验主 symbol 与 `*SETTLED` 文件、15m/1h/4h
-断层、已验证 identity 起点以及 1d 生命周期隔离，保存内容寻址报告。该项不修改
-normalization、不批准 ATR seed、不解除历史规则门禁，也不运行研究或 LOCKED_TEST。
+第 25 项建议只生成 lifecycle-scoped normalization remediation plan：为 8 个已确认标的
+明确各周期旧生命周期排除范围和 1d 边界日处理，另存新的内容寻址计划，不覆盖当前 frozen
+result；AERGO 保持排除。该项仍不得批准 ATR reset/history seed，也不得解除历史规则门禁。
 
 整体保持 P0–P8 完成、P9 1/4、9/14（约 64%）。
