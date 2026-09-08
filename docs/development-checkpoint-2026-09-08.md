@@ -91,10 +91,30 @@ HEAD 为 `4716682`；第 22、23 项均不重复执行。本轮继续 P9 真实�
 - Ruff 全仓通过；mypy 全仓 `151 source files` 通过；计划脚本按预期返回码 `1`（因为
   计划必须保持 BLOCKED），重复生成 hash 稳定。
 
+## 第 26 项：synthetic-only lifecycle derivative acceptance（完成）
+
+新增独立 `lifecycle-scoped-normalization-acceptance/0.1.0` receipt 与纯内存 executor。
+它只接受合成 `RAW_COLUMNS` DataFrame 和第 25 项 trusted action，复核主 ZIP hash、行
+内容 hash、exact cutoff、输入/排除/保留行数，再调用既有纯 `normalize_klines()` 做内存
+校验；CTK 型空边界分区直接 `EXCLUDED_EMPTY_BOUNDARY_PARTITION`，不调用 normalizer。
+输出不写 Parquet；临时 acceptance writer 只在测试目录验证不可变写入。
+
+- receipt 的 `execution_scope` 固定为 `SYNTHETIC_ONLY`，plan hash、主/SETTLED symbol、
+  source hashes、cutoff、行数和 derivative content hash 均内容寻址。
+- `output_materialized`、normalization execution、ATR reset、history seed、历史规则
+  放行、research、strategy、locked test 等字段全部保持 false。
+- 未下载行情、连接账户、交易、部署或 push；frozen normalization 和生产数据未修改。
+
+验证结果：冻结 CPython 3.12.13 下第 26 项专项 `3 passed`；相关生命周期回归合计
+`12 passed`；Ruff 和 mypy（相关 2 个文件）通过。
+
+最终全量验证：冻结 CPython 3.12.13 `848 passed, 1 skipped`；Ruff 全仓通过；mypy
+全仓 `153 source files` 通过；skip 为既有 Windows symlink 场景。
+
 ## 下一项
 
-第 26 项应先实现 lifecycle-scoped derivative normalization 的独立 namespace 与
-synthetic-only executor/acceptance contract；必须继续保留 frozen normalization，不能
-执行真实行情重算，不能批准 ATR reset/history seed，也不能解除历史规则或研究门禁。
+第 27 项应只做 lifecycle derivative acceptance 的真实输入 dry-run 设计审计：核对
+生产路径隔离、manifest lineage 和全量输入行守恒；在获得明确批准前不得执行真实
+derivative normalization，不得批准 ATR reset/history seed，也不得解除历史规则或研究门禁。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。
