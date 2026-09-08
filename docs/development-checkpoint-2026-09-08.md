@@ -111,10 +111,28 @@ HEAD 为 `4716682`；第 22、23 项均不重复执行。本轮继续 P9 真实�
 最终全量验证：冻结 CPython 3.12.13 `848 passed, 1 skipped`；Ruff 全仓通过；mypy
 全仓 `153 source files` 通过；skip 为既有 Windows symlink 场景。
 
+## 第 27 项：real-input dry-run design audit（完成）
+
+新增 `lifecycle-derivative-dry-run-design/0.1.0` 设计审计。它只重读第 25 项内容寻址
+plan，不调用 derivative executor、不读取原始行情、不生成 Parquet。冻结 namespace
+`data/normalized/klines` 与未来 derivative namespace `data/normalized/lifecycle_scoped/v0.1.0`
+通过纯路径隔离校验；32/32 action 的主/SETTLED hash、identity ref 和 settled symbol
+lineage 完整。全量输入行守恒为 source 30,877 = excluded 20,724 + retained 10,153，
+SETTLED evidence 341。
+
+报告状态固定 `BLOCKED`，输出 `raw_market_data_read=false`、`derivative_executor_called=false`、
+`output_materialized=false` 及全部研究/策略/交易授权 false。没有下载行情、连接账户、
+交易、部署或 push。设计报告不构成真实执行授权。
+
+内容寻址报告为
+`124c2c1ed41ff3008c61b39fb8f02b70e30e8a650c3d49961368255483fb1898`。验证结果：冻结
+CPython 3.12.13 下第 27 项专项 `3 passed`；全量 `851 passed, 1 skipped`；Ruff 全仓
+通过；mypy 全仓 `156 source files` 通过。skip 为既有 Windows symlink 场景。
+
 ## 下一项
 
-第 27 项应只做 lifecycle derivative acceptance 的真实输入 dry-run 设计审计：核对
-生产路径隔离、manifest lineage 和全量输入行守恒；在获得明确批准前不得执行真实
-derivative normalization，不得批准 ATR reset/history seed，也不得解除历史规则或研究门禁。
+第 28 项应只做真实 derivative executor 的生产实现前安全审查与接口冻结；在获得明确
+批准前不得执行真实 derivative normalization，不得批准 ATR reset/history seed，也不得
+解除历史规则或研究门禁。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。

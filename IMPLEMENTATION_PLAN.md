@@ -1,6 +1,6 @@
 # Crypto Trading Copilot 实施计划
 
-状态：P0–P8、P9.1、P9.2a、P9.2b 输入门禁、P9.2c 生命周期边界 remediation plan 及 P9.2d synthetic derivative acceptance 已完成；真实研究仍阻断
+状态：P0–P8、P9.1、P9.2a、P9.2b 输入门禁、P9.2c 生命周期边界 remediation plan、P9.2d synthetic derivative acceptance 及 P9.2e real-input dry-run design audit 已完成；真实研究仍阻断
 依据：`CRYPTO_AGENT_DEVELOPMENT_SPEC.md`  
 制定日期：2026-08-26
 
