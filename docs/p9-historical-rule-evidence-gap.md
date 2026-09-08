@@ -33,8 +33,28 @@
 应先核验一个小范围规则区间，再复用现有门控与 P7 集成测试验证，不能直接批量
 把全部草案标成 VERIFIED。第三方付费资源、密钥操作或改变既定证据标准须先确认。
 
+## 2026-09-08 续核
+
+官方公告进一步证明当前规则不能回填 DEV，而不是补齐了连续历史：
+
+- BTCUSDT 的 tick size 在 2022-02-15 从 0.01 调整为 0.1，早于 DEV；该公告只能证明
+  一个变更点，不能证明 2023-08-01 至 2025-01-30 没有其他未收集变更。来源：
+  [Binance BTC USDⓈ-M tick size adjustment](https://www.binance.com/en/support/announcement/detail/81e6795b0bae49828cbd52479094a987)。
+- BTCUSDT、ETHUSDT 的 minimum notional 在 DEV 内于 2023-11-02 分别从 5/5 USDT
+  调整为 100/20 USDT；当前快照中的 BTC 值已是 50 USDT，因此单条当前规则明显不能
+  覆盖 DEV。来源：
+  [Binance 2023 minimum-notional adjustment](https://www.binance.com/en/support/announcement/detail/e4384cba297a4bd2a154be644d5d76f9)、
+  [Binance 2026 minimum-notional adjustment](https://www.binance.com/en/support/announcement/detail/10999fd17dc045de801c0c78ab29e6fc)。
+- Binance 早期 minimum-notional 规则公告明确提示阈值可能不经预告调整，因此仅搜索
+  公告列表也不能证明完整连续性。来源：
+  [Binance minimum order notional rule](https://www.binance.com/en/support/announcement/detail/76719bbaeeb847bbac4daa2906fcdcc0)。
+
+本轮只核对公开页面，没有把网页摘要保存成历史快照、没有生成 intake submission，
+也没有提升 verification 状态。现有 649 条规则仍全部 `UNVERIFIED`；DEV 的 248 个
+symbol、16,440 个 member-days 仍为 0 eligible。
+
 ## 其他正式研究前置条件
 
-本地 `git rev-parse --verify HEAD` 当前没有有效提交，仓库文件仍未跟踪。因此，即使
-历史规则补齐，正式晋级 RunManifest 还需真实代码提交与干净工作区。本次未创建提交
-或改动 Git 状态，工程输入审计与计划工件不冒充正式策略报告。
+2026-08-31 首次核验时，本地还没有有效 Git 提交；该工程阻断已在后续基线任务解除。
+2026-09-08 的干净 preflight 已绑定提交 `2aa61a9`，当前剩余问题是历史规则和真实数据，
+而不是 Git 基线。工程输入审计与计划工件仍不得冒充正式策略报告。
