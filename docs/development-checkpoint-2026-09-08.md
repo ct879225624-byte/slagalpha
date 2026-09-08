@@ -129,10 +129,29 @@ SETTLED evidence 341。
 CPython 3.12.13 下第 27 项专项 `3 passed`；全量 `851 passed, 1 skipped`；Ruff 全仓
 通过；mypy 全仓 `156 source files` 通过。skip 为既有 Windows symlink 场景。
 
+## 第 28 项：production executor 安全接口冻结（完成）
+
+新增 `lifecycle-derivative-executor-interface/0.1.0` 内容寻址契约，只重读第 25、27 项
+可信 manifest，不实现或调用 executor，不读取原始行情，不生成 Parquet。契约 hash 为
+`e1033ff7559b3116e6825471911718dc16828ec6d99acc95d7e3d66d5a914fa3`，重复生成稳定。
+
+接口固定本地主 archive 为唯一未来输入，SETTLED 为 `EVIDENCE_ONLY_NEVER_MERGE`；frozen
+namespace 保持 `data/normalized/klines`，derivative namespace 固定为
+`data/normalized/lifecycle_scoped/v0.1.0`。发布策略固定为 stage、validate、atomic rename；
+恢复只允许复用内容完全一致的输出，冲突永不覆盖，空分区只允许 exclusion receipt。
+32 个 action 和 `30,877 = 20,724 + 10,153` 行数守恒已绑定契约。
+
+状态保持 `BLOCKED`；executor implementation、真实 normalization execution、ATR reset、
+history seed、历史规则放行、research、strategy、locked test 授权全部为 false。没有下载
+行情、连接账户、交易、部署或 push。冻结 CPython 3.12.13 专项测试 `5 passed`；Ruff 与
+mypy 相关文件通过。最终验证为全部 lifecycle 回归 `20 passed`、Ruff 全仓通过、mypy
+全仓 `159 source files` 通过、`git diff --check` 通过。第 27 项提交前完成的全量结果
+`851 passed, 1 skipped` 仍是当前最近一次全量基线。
+
 ## 下一项
 
-第 28 项应只做真实 derivative executor 的生产实现前安全审查与接口冻结；在获得明确
-批准前不得执行真实 derivative normalization，不得批准 ATR reset/history seed，也不得
-解除历史规则或研究门禁。
+第 29 项只实现契约约束下的 executor 代码路径并用合成 archive 验收；不得对真实 ZIP
+执行，不得物化真实 derivative 数据。实现必须先逐 action 验证可信 plan membership、
+archive/rows hash 和 exact cutoff，并继续保持所有研究与策略门禁关闭。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。
