@@ -41,6 +41,7 @@ dist/
 !/data/manifests/historical_rule_gate/
 !/data/manifests/identity_registry_build/
 !/data/manifests/lifecycle_boundary_audit/
+!/data/manifests/lifecycle_normalization_remediation_plan/
 !/data/manifests/normalization_batch/
 !/data/manifests/normalization_gap_audit/
 !/data/manifests/parameter_version/

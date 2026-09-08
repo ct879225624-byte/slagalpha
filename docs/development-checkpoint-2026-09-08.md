@@ -62,10 +62,39 @@ HEAD 为 `4716682`；第 22、23 项均不重复执行。本轮继续 P9 真实�
   唯一失败是 environment-lock 合成测试拒绝非冻结解释器。同一用例在冻结 3.12.13 环境
   单独及完整运行均通过，未修改该既有门禁测试。
 
+## 第 25 项：生命周期范围 normalization remediation plan（完成）
+
+新增 `lifecycle-normalization-remediation-plan/0.1.0` 的纯计划 builder/writer 与冻结
+输入脚本。计划严格绑定 normalization result
+`c86dd5d2fa055d5bb02364c8abfa1d5e81998bccdfabfc0c1d2e9554832955d2` 和 lifecycle audit
+`a8caec19488f3e875da8f2c548c8d7c7214c2365765b6bf7d3ae02282212c818`，并在 writer 写入前
+重建 trusted plan；计划自身重算 hash 不能替换可信输入。输出为：
+`data/manifests/lifecycle_normalization_remediation_plan/fcafcdb44b6102321e4c43378911b8302caa863d3e5f3dad1133a18c2c791a79.json`。
+
+- 8 个已确认 symbol 生成 32 个 15m/1h/4h/1d action；AERGOUSDT 保持 `UNRESOLVED`，
+  进入 `excluded_symbols`，不生成 cutoff。
+- 9 个边界桶恰好对齐、23 个部分桶排除；CTKUSDT/1d 无可保留行，整边界月主分区
+  排除。边界月源 30,877 行，排除 20,724 行，预计保留 10,153 行；SETTLED 341 行
+  全部为 `EVIDENCE_ONLY_NEVER_MERGE`。
+- 15m/1h/4h/1d 均按 exact `effective_from` 推导首个完整桶，过滤条件为
+  `open_time >= retain_from_open_time`；未对齐边界桶不进入新生命周期。
+- frozen normalization、原始 ZIP、Parquet 均未修改；没有下载行情、连接账户、交易、
+  部署或 push。ATR reset、history seed、历史规则放行、研究、策略执行、locked test
+  消费均为 false，计划状态保持 `BLOCKED`。
+
+验证结果：
+
+- 冻结 CPython 3.12.13 完整 pytest：`845 passed, 1 skipped`；skip 为既有 Windows
+  symlink 场景。
+- 第 25 项专项 pytest（含正例、AERGO 反例、部分桶/整分区、可信 hash 与 writer 篡改）：
+  `6 passed`；生命周期相关回归合计 `9 passed`。
+- Ruff 全仓通过；mypy 全仓 `151 source files` 通过；计划脚本按预期返回码 `1`（因为
+  计划必须保持 BLOCKED），重复生成 hash 稳定。
+
 ## 下一项
 
-第 25 项建议只生成 lifecycle-scoped normalization remediation plan：为 8 个已确认标的
-明确各周期旧生命周期排除范围和 1d 边界日处理，另存新的内容寻址计划，不覆盖当前 frozen
-result；AERGO 保持排除。该项仍不得批准 ATR reset/history seed，也不得解除历史规则门禁。
+第 26 项应先实现 lifecycle-scoped derivative normalization 的独立 namespace 与
+synthetic-only executor/acceptance contract；必须继续保留 frozen normalization，不能
+执行真实行情重算，不能批准 ATR reset/history seed，也不能解除历史规则或研究门禁。
 
-整体保持 P0–P8 完成、P9 1/4、9/14（约 64%）。
+整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。
