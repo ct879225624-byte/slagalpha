@@ -287,10 +287,32 @@ normalization，未下载、研究、执行策略或消费 locked test。
 验证：新增合成审计专项 `7 passed`；Ruff 与 mypy 通过。脚本
 `python scripts/p9_atr_history_seed_audit.py` 按设计返回码 `1`，因为阻断仍存在。
 
+## 第 36 项：跨月 lifecycle warm-up 实证复验（完成）
+
+将第 35 项审计升级为 `atr-history-seed-audit/0.2.0`，保留 v0.1 清单的解析与内容哈希兼容。
+脚本不再把“边界月 derivative”误当作全部可用证据，而是从 lifecycle cutoff 开始，按连续
+自然月选择达到 SMA180 所需的最小后续分区，并复用既有 Candle 输入边界逐项重验：原始 ZIP
+SHA-256、download receipt、normalization receipt、原始数据重算、Parquet SHA-256、物理 schema、
+metadata 与逐值一致性。边界 derivative 仍限定在独立 lifecycle namespace，并复验 action hash、
+输出 hash、行数及 exact interval grid；未使用 cutoff 前旧生命周期数据。
+
+真实只读复跑生成内容寻址报告
+`552445ff085024194a57b565a8f17088b549bd9df4269fa56d604e20f7fcd53f`：已解析的 32/32 个
+stream 全部为 `SUFFICIENT`、0 个已解析 stream blocked。报告仍为 `BLOCKED`，唯一 blocker
+类别是 AERGOUSDT 的 15m/1h/4h 三个未解析 lifecycle identity；`atr_reset_authorized=false`、
+`history_seed_authorized=false`、`research_authorized=false`、`strategy_executed=false`、
+`locked_test_consumed=false`。脚本返回码 1 属预期。
+
+同时修正非 interval 对齐的 identity effective time：v0.2 显式记录保守 ceil 后的
+`warmup_prefix_start`，第一个可用 open time 从该网格起点计算；不会把边界桶的旧生命周期片段
+纳入 180 根预热。冻结 CPython 3.12.13 下新增/更新专项 `8 passed`、lifecycle 扩大回归
+`20 passed`、全量 `884 passed, 1 skipped`；skip 为既有 Windows symlink 场景。Ruff 全仓、
+mypy `src scripts`（98 source files）与 `git diff --check` 均通过。
+
 ## 下一项
 
 实施计划没有定义 P10–P13；在 P9 的剩余独立输入门禁（历史规则、1m、Funding、AERGO identity）
-解除前，真实参数回测与 locked test 仍不得启动。下一步只能继续收集并审计这些权威输入，不能
-虚构后续阶段或用当前边界月 derivative 代替完整生命周期历史。
+解除前，真实参数回测与 locked test 仍不得启动。下一步继续审计现有本地权威证据能否解析
+AERGO lifecycle identity；若仓库无足够证据，保留 blocker 并转向其他不依赖下载的 P9 门禁。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。

@@ -4,13 +4,24 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Iterable
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal, Self
 
+import pandas as pd
+import pyarrow.parquet as pq
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from slagalpha.data.archive import sha256_file
 from slagalpha.reporting.run_manifest import _publish_immutable, canonical_json_bytes
+from slagalpha.research.candle_inputs import (
+    CandlePartitionSource,
+    contained_file,
+    load_verified_candle_partition,
+)
+from slagalpha.research.lifecycle_real_execution import LifecycleRealActionResult
+from slagalpha.research.lifecycle_remediation import LifecycleIntervalRemediationAction
 from slagalpha.research.lifecycle_replacement import LifecycleReplacementNormalizationResult
 
 Interval = Literal["15m", "1h", "4h", "1d"]
@@ -38,6 +49,7 @@ class LifecycleWarmupInput(BaseModel):
 
     identity: str
     lifecycle_start: datetime
+    warmup_prefix_start: datetime | None = None
     verified_post_cutoff_row_count: int = Field(ge=0)
     complete_same_lifecycle_prefix: bool
     contiguous_same_lifecycle_prefix: bool
@@ -51,6 +63,14 @@ class LifecycleWarmupInput(BaseModel):
             raise ValueError("lifecycle start must use UTC")
         if self.lifecycle_start.microsecond:
             raise ValueError("lifecycle start must use exact seconds")
+        prefix_start = self.warmup_prefix_start
+        if prefix_start is not None and (
+            prefix_start.tzinfo is None
+            or prefix_start.utcoffset() != timedelta(0)
+            or prefix_start.microsecond
+            or prefix_start < self.lifecycle_start
+        ):
+            raise ValueError("warm-up prefix start must be an exact UTC time after lifecycle start")
         if len(self.source_reference) != 64 or any(
             c not in "0123456789abcdef" for c in self.source_reference
         ):
@@ -65,6 +85,7 @@ class LifecycleWarmupEvidence(BaseModel):
 
     identity: str
     lifecycle_start: datetime
+    warmup_prefix_start: datetime | None = None
     required_sma_bars: int = _SMA_WARMUP_BARS
     required_atr_bars: int = _ATR_WARMUP_BARS
     required_warmup_bars: int = _SMA_WARMUP_BARS
@@ -84,7 +105,12 @@ class LifecycleWarmupEvidence(BaseModel):
         interval = match.group(1)
         if self.lifecycle_start.tzinfo is None or self.lifecycle_start.utcoffset() != timedelta(0):
             raise ValueError("lifecycle start must use UTC")
-        expected_first = self.lifecycle_start + _INTERVAL[interval] * self.required_warmup_bars
+        prefix_start = self.warmup_prefix_start or self.lifecycle_start
+        if self.warmup_prefix_start is not None and (
+            int(prefix_start.timestamp()) % int(_INTERVAL[interval].total_seconds())
+        ):
+            raise ValueError("warm-up prefix start must align to the interval grid")
+        expected_first = prefix_start + _INTERVAL[interval] * self.required_warmup_bars
         if self.first_usable_open_time != expected_first:
             raise ValueError("first usable time does not match warm-up boundary")
         if self.required_sma_bars != _SMA_WARMUP_BARS or self.required_atr_bars != _ATR_WARMUP_BARS:
@@ -111,7 +137,9 @@ class AtrHistorySeedAuditReport(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["atr-history-seed-audit/0.1.0"] = "atr-history-seed-audit/0.1.0"
+    schema_version: Literal[
+        "atr-history-seed-audit/0.1.0", "atr-history-seed-audit/0.2.0"
+    ] = "atr-history-seed-audit/0.2.0"
     replacement_result_hash: str
     replacement_dataset_content_hash: str
     required_sma_bars: int = _SMA_WARMUP_BARS
@@ -157,7 +185,7 @@ class AtrHistorySeedAuditReport(BaseModel):
             raise ValueError("ATR audit status and blockers disagree")
         if self.status == "CHECKS_PASSED" and self.unresolved_lifecycle_identities:
             raise ValueError("unresolved lifecycle identities must block")
-        payload = self.model_dump(mode="json", exclude={"report_hash"})
+        payload = self.model_dump(mode="json", exclude={"report_hash"}, exclude_none=True)
         if self.report_hash != hashlib.sha256(canonical_json_bytes(payload)).hexdigest():
             raise ValueError("ATR audit content hash mismatch")
         return self
@@ -169,6 +197,101 @@ def _action_identities(replacement: LifecycleReplacementNormalizationResult) -> 
         | set(replacement.shadowed_daily_partition_identities)
     )
     return tuple(sorted("/".join(identity.split("/")[:2]) for identity in partitions))
+
+
+def _continuous_prefix_count(
+    open_times: Iterable[datetime], *, start: datetime, interval: Interval
+) -> tuple[int, bool]:
+    """Count the exact interval-grid prefix and report whether all supplied rows belong to it."""
+
+    expected = start
+    count = 0
+    complete_input = True
+    for value in open_times:
+        observed = pd.Timestamp(value).to_pydatetime()
+        if observed != expected:
+            complete_input = False
+            break
+        count += 1
+        expected += _INTERVAL[interval]
+    return count, complete_input
+
+
+def load_verified_lifecycle_warmup_input(
+    *,
+    project_dir: Path,
+    action: LifecycleIntervalRemediationAction,
+    output: LifecycleRealActionResult,
+    subsequent_sources: tuple[CandlePartitionSource, ...],
+) -> LifecycleWarmupInput:
+    """Revalidate a boundary derivative and its exact post-boundary monthly continuation."""
+
+    action = LifecycleIntervalRemediationAction.model_validate(action.model_dump(mode="json"))
+    output = LifecycleRealActionResult.model_validate(output.model_dump(mode="json"))
+    sources = tuple(
+        CandlePartitionSource.model_validate(item.model_dump(mode="json"))
+        for item in subsequent_sources
+    )
+    action_hash = hashlib.sha256(canonical_json_bytes(action.model_dump(mode="json"))).hexdigest()
+    if (
+        (output.symbol, output.interval, output.evidence_period, output.action_hash)
+        != (action.symbol, action.interval, action.evidence_period, action_hash)
+        or output.retained_row_count != action.boundary_month_expected_retained_row_count
+    ):
+        raise AtrHistoryAuditError("lifecycle output does not match its remediation action")
+
+    evidence_path = contained_file(project_dir, output.output_relative_path)
+    output_root = (project_dir / "data/normalized/lifecycle_scoped/v0.1.0").resolve()
+    if not evidence_path.resolve().is_relative_to(output_root):
+        raise AtrHistoryAuditError("lifecycle derivative escapes its dedicated namespace")
+    if sha256_file(evidence_path) != output.output_sha256:
+        raise AtrHistoryAuditError("lifecycle derivative output hash changed")
+    open_times: list[datetime] = []
+    if output.status == "MATERIALIZED":
+        try:
+            table = pq.ParquetFile(evidence_path).read(columns=["open_time"])
+            boundary_times = table.column("open_time").to_pylist()
+        except (OSError, ValueError) as error:
+            raise AtrHistoryAuditError("lifecycle derivative timestamps are unreadable") from error
+        if len(boundary_times) != output.retained_row_count:
+            raise AtrHistoryAuditError("lifecycle derivative row count changed")
+        open_times.extend(boundary_times)
+    elif output.retained_row_count:
+        raise AtrHistoryAuditError("empty lifecycle exclusion cannot retain rows")
+
+    year, month = (int(part) for part in action.evidence_period.split("-"))
+    expected_year, expected_month = (year + 1, 1) if month == 12 else (year, month + 1)
+    for source in sources:
+        expected_period = f"{expected_year:04d}-{expected_month:02d}"
+        if (
+            source.spec.symbol != action.symbol
+            or source.spec.interval != action.interval
+            or source.spec.period != expected_period
+        ):
+            raise AtrHistoryAuditError("post-boundary sources must be consecutive canonical months")
+        frame = load_verified_candle_partition(project_dir=project_dir, source=source)
+        open_times.extend(frame["open_time"].dt.to_pydatetime())
+        expected_year, expected_month = (
+            (expected_year + 1, 1) if expected_month == 12 else (expected_year, expected_month + 1)
+        )
+
+    prefix_count, all_rows_contiguous = _continuous_prefix_count(
+        open_times, start=action.retain_from_open_time, interval=action.interval
+    )
+    reference_payload = {
+        "action": action.model_dump(mode="json"),
+        "output": output.model_dump(mode="json"),
+        "subsequent_sources": [item.model_dump(mode="json") for item in sources],
+    }
+    return LifecycleWarmupInput(
+        identity=f"{action.symbol}/{action.interval}",
+        lifecycle_start=action.identity_effective_from,
+        warmup_prefix_start=action.retain_from_open_time,
+        verified_post_cutoff_row_count=prefix_count,
+        complete_same_lifecycle_prefix=prefix_count >= _SMA_WARMUP_BARS,
+        contiguous_same_lifecycle_prefix=all_rows_contiguous,
+        source_reference=hashlib.sha256(canonical_json_bytes(reference_payload)).hexdigest(),
+    )
 
 
 def build_atr_history_seed_audit(
@@ -215,7 +338,9 @@ def build_atr_history_seed_audit(
         evidence.append(LifecycleWarmupEvidence(
             identity=item.identity,
             lifecycle_start=item.lifecycle_start,
-            first_usable_open_time=item.lifecycle_start + _INTERVAL[interval] * _SMA_WARMUP_BARS,
+            warmup_prefix_start=item.warmup_prefix_start,
+            first_usable_open_time=(item.warmup_prefix_start or item.lifecycle_start)
+            + _INTERVAL[interval] * _SMA_WARMUP_BARS,
             verified_post_cutoff_row_count=item.verified_post_cutoff_row_count,
             complete_same_lifecycle_prefix=item.complete_same_lifecycle_prefix,
             contiguous_same_lifecycle_prefix=item.contiguous_same_lifecycle_prefix,
@@ -230,12 +355,12 @@ def build_atr_history_seed_audit(
         blockers.add("ATR_HISTORY_WARMUP_NOT_PROVEN_AFTER_CUTOFF")
     ordered_evidence = tuple(evidence)
     payload: dict[str, Any] = {
-        "schema_version": "atr-history-seed-audit/0.1.0",
+        "schema_version": "atr-history-seed-audit/0.2.0",
         "replacement_result_hash": replacement.result_hash,
         "replacement_dataset_content_hash": replacement.replacement_dataset_content_hash,
         "required_sma_bars": _SMA_WARMUP_BARS,
         "required_atr_bars": _ATR_WARMUP_BARS,
-        "streams": [item.model_dump(mode="json") for item in ordered_evidence],
+        "streams": [item.model_dump(mode="json", exclude_none=True) for item in ordered_evidence],
         "unresolved_lifecycle_identities": list(unresolved),
         "sufficient_stream_count": sum(item.status == "SUFFICIENT" for item in ordered_evidence),
         "blocked_stream_count": sum(item.status == "BLOCKED" for item in ordered_evidence),
@@ -256,7 +381,7 @@ def build_atr_history_seed_audit(
 def write_atr_history_seed_audit(report: AtrHistorySeedAuditReport, data_dir: Path) -> Path:
     report = AtrHistorySeedAuditReport.model_validate(report.model_dump(mode="json"))
     destination = data_dir / "manifests" / "atr_history_seed_audit" / f"{report.report_hash}.json"
-    content = canonical_json_bytes(report.model_dump(mode="json"))
+    content = canonical_json_bytes(report.model_dump(mode="json", exclude_none=True))
     if destination.is_symlink() or (destination.exists() and destination.read_bytes() != content):
         raise AtrHistoryAuditError("existing ATR audit changed")
     destination.parent.mkdir(parents=True, exist_ok=True)

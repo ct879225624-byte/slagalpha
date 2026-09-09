@@ -104,6 +104,21 @@ def test_sufficient_post_cutoff_prefix_is_provable_but_not_authorized() -> None:
     assert report.history_seed_authorized is False
 
 
+def test_non_aligned_lifecycle_uses_conservative_interval_prefix_start() -> None:
+    replacement = _replacement()
+    item = _input().model_copy(update={
+        "lifecycle_start": datetime(2025, 1, 1, 0, 15, tzinfo=UTC),
+        "warmup_prefix_start": datetime(2025, 1, 2, tzinfo=UTC),
+    })
+    report = build_atr_history_seed_audit(
+        replacement=replacement,
+        expected_replacement_hash=replacement.result_hash,
+        inputs=(item,),
+    )
+    assert report.schema_version == "atr-history-seed-audit/0.2.0"
+    assert report.streams[0].first_usable_open_time == datetime(2025, 7, 1, tzinfo=UTC)
+
+
 @pytest.mark.parametrize(
     ("count", "complete", "contiguous", "reason"),
     [
