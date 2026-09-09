@@ -247,10 +247,32 @@ remediation plan 和真实 execution receipt 严格串联。overlay policy 固�
 Ruff 全仓通过；mypy 全仓 `141 source files` 通过；`git diff --check` 通过。清单脚本复跑
 得到相同 result hash，并按设计返回码 1。
 
+## 第 34 项：replacement 输入语义复验（完成）
+
+`dev-execution-semantics/0.2.0` 可选识别第 33 项 replacement lineage。审计重新读取并验证
+真实 completion receipt，逐个约束输出只能位于 lifecycle namespace，并复算 32 个输出文件
+的 SHA-256；本地实测 32/32、1,107,438 bytes 通过。报告 hash 为
+`c00ef3a90750581fc6ad2c490df8c2e5ae4ff143ba3e23d74081ee3c04f3f47e`。
+
+- replacement 的可信 result hash、source normalization、dataset、remediation plan、receipt、
+  action 状态数和 retained rows 全部交叉绑定；任何输出缺失、路径越界或字节改变均 Fail
+  Closed。
+- 已被 replacement 取代的 18 条旧 lifecycle gap 诊断不再重复报告，改由 replacement 自身
+  5 个 blocker 表达当前状态。
+- `CANDLE_MULTI_TIMEFRAME` 仍为 deferred：replacement 可用 73,336/73,340，AERGO 3 个失败与
+  CTKUSDT/1d exclusion 未解决。1m、Funding、历史规则和 ATR/history seed 仍独立阻断。
+- v0.1 报告保持可解析且 hash 兼容；未提供 replacement 时原语义与不可变 writer 字节保持
+  不变。脚本按预期返回码 1，research/strategy/locked test 均未执行。
+
+验证结果：冻结 CPython 3.12.13 下 execution input/semantics 与 replacement 专项
+`40 passed, 1 skipped`；全量 `876 passed, 1 skipped`，skip 为既有 Windows symlink
+场景；Ruff 全仓通过；mypy 全仓 `141 source files` 通过；`git diff --check` 通过。真实语义
+脚本复跑得到相同报告 hash，并按设计返回码 1。
+
 ## 下一项
 
-第 34 项应让只读输入语义审计识别 replacement lineage，但仍要求所有独立研究输入门禁通过；
-它只能证明生命周期替代规则可消费，不能放行 AERGO、历史规则、1m、Funding 或 ATR/history
-seed，也不能开始参数研究。
+第 35 项应只处理 ATR/history seed 的可审计决策边界：先证明生命周期 cutoff 后的指标窗口
+能否由现有、同生命周期数据充分预热；若证据不足继续阻断，不得从旧生命周期价格继承 ATR，
+也不得因此开始参数研究。AERGO、历史规则、1m 和 Funding 仍是独立问题。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。

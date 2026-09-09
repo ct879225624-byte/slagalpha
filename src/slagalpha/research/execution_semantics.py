@@ -6,7 +6,7 @@ import hashlib
 from pathlib import Path
 from typing import Any, Literal, Self, TypeVar
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 from slagalpha.data.archive_batch import ArchiveBatchResult
 from slagalpha.data.normalization_batch import NormalizationBatchResult
@@ -25,6 +25,10 @@ from slagalpha.research.execution_inputs import (
     InputArtifactSelection,
     VerifiedInputArtifact,
     inspect_dev_execution_inputs,
+)
+from slagalpha.research.lifecycle_real_execution import LifecycleRealExecutionReceipt
+from slagalpha.research.lifecycle_replacement import (
+    LifecycleReplacementNormalizationResult,
 )
 from slagalpha.research.normalization_gaps import (
     FINITE_LOOKBACK_BARS,
@@ -46,12 +50,46 @@ from slagalpha.research.splits import (
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
+class LifecycleReplacementSemanticReference(BaseModel):
+    """Verified local lifecycle overlay and its still-blocked coverage."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    result_hash: str
+    dataset_content_hash: str
+    real_execution_receipt_hash: str
+    requested_partition_count: int = Field(gt=0)
+    available_partition_count: int = Field(ge=0)
+    unavailable_partition_count: int = Field(ge=0)
+    verified_output_count: int = Field(gt=0)
+    verified_output_bytes: int = Field(gt=0)
+    status: Literal["BLOCKED"] = "BLOCKED"
+    blockers: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def validate_reference(self) -> Self:
+        for value in (
+            self.result_hash,
+            self.dataset_content_hash,
+            self.real_execution_receipt_hash,
+        ):
+            if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+                raise ValueError("replacement semantic references must be lowercase SHA-256")
+        if self.available_partition_count + self.unavailable_partition_count != (
+            self.requested_partition_count
+        ):
+            raise ValueError("replacement semantic partition counts do not reconcile")
+        if not self.blockers or self.blockers != tuple(sorted(set(self.blockers))):
+            raise ValueError("replacement semantic blockers must be non-empty and canonical")
+        return self
+
+
 class DevExecutionSemanticReport(BaseModel):
     """Parsed manifest readiness; never permission to run a replay."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["dev-execution-semantics/0.1.0"] = (
+    schema_version: Literal["dev-execution-semantics/0.1.0", "dev-execution-semantics/0.2.0"] = (
         "dev-execution-semantics/0.1.0"
     )
     dataset_role: Literal[DatasetRole.DEV] = DatasetRole.DEV
@@ -60,6 +98,7 @@ class DevExecutionSemanticReport(BaseModel):
     deferred_roles: tuple[InputArtifactRole, ...]
     status: Literal["BLOCKED", "CHECKS_PASSED"]
     blockers: tuple[str, ...]
+    replacement_lineage: LifecycleReplacementSemanticReference | None = None
     strategy_executed: Literal[False] = False
     locked_test_consumed: Literal[False] = False
     research_authorized: Literal[False] = False
@@ -88,7 +127,14 @@ class DevExecutionSemanticReport(BaseModel):
             raise ValueError("semantic blockers must be unique and canonical")
         if (self.status == "BLOCKED") != bool(self.blockers):
             raise ValueError("semantic status and blockers disagree")
-        payload = self.model_dump(mode="json", exclude={"report_hash"})
+        if self.schema_version == "dev-execution-semantics/0.1.0":
+            if self.replacement_lineage is not None:
+                raise ValueError("v0.1 semantic reports cannot contain replacement lineage")
+        elif self.replacement_lineage is None and (
+            "RUN_INPUT_SEMANTIC_INVALID_LIFECYCLE_REPLACEMENT" not in self.blockers
+        ):
+            raise ValueError("v0.2 semantic reports must account for replacement lineage")
+        payload = self.model_dump(mode="json", exclude={"report_hash"}, exclude_none=True)
         if self.report_hash != hashlib.sha256(canonical_json_bytes(payload)).hexdigest():
             raise ValueError("semantic report content hash mismatch")
         return self
@@ -106,26 +152,97 @@ def _read_verified(project_dir: Path, artifact: VerifiedInputArtifact) -> bytes:
     return content
 
 
+def _verify_lifecycle_replacement(
+    *,
+    project_dir: Path,
+    normalization: NormalizationBatchResult,
+    replacement: LifecycleReplacementNormalizationResult,
+) -> LifecycleReplacementSemanticReference | None:
+    """Revalidate the completion receipt and every local derivative byte."""
+
+    root = project_dir.resolve()
+    output_root = (root / "data/normalized/lifecycle_scoped/v0.1.0").resolve()
+    receipt_path = (
+        root
+        / "data/manifests/lifecycle_real_execution"
+        / f"{replacement.real_execution_receipt_hash}.json"
+    )
+    try:
+        if not output_root.is_relative_to(root) or receipt_path.is_symlink():
+            return None
+        receipt = LifecycleRealExecutionReceipt.model_validate_json(receipt_path.read_bytes())
+        if (
+            receipt.receipt_hash != replacement.real_execution_receipt_hash
+            or receipt.remediation_plan_hash != replacement.remediation_plan_hash
+            or receipt.source_normalization_result_hash != normalization.result_hash
+            or replacement.source_normalization_result_hash != normalization.result_hash
+            or replacement.source_dataset_content_hash != normalization.dataset_content_hash
+            or replacement.requested_partition_count != normalization.requested_count
+            or replacement.materialized_overlay_partition_count != receipt.materialized_action_count
+            or replacement.excluded_overlay_partition_count != receipt.excluded_action_count
+            or replacement.derivative_retained_row_count != receipt.retained_row_count
+        ):
+            return None
+        output_bytes = 0
+        for output in receipt.outputs:
+            relative = Path(output.output_relative_path)
+            if relative.is_absolute():
+                return None
+            path = root.joinpath(*relative.parts)
+            resolved = path.resolve()
+            if not resolved.is_relative_to(output_root) or path.is_symlink() or not path.is_file():
+                return None
+            content = path.read_bytes()
+            if hashlib.sha256(content).hexdigest() != output.output_sha256:
+                return None
+            output_bytes += len(content)
+    except (OSError, ValueError):
+        return None
+    return LifecycleReplacementSemanticReference(
+        result_hash=replacement.result_hash,
+        dataset_content_hash=replacement.replacement_dataset_content_hash,
+        real_execution_receipt_hash=receipt.receipt_hash,
+        requested_partition_count=replacement.requested_partition_count,
+        available_partition_count=replacement.replacement_available_partition_count,
+        unavailable_partition_count=replacement.unavailable_partition_count,
+        verified_output_count=len(receipt.outputs),
+        verified_output_bytes=output_bytes,
+        status=replacement.status,
+        blockers=replacement.blockers,
+    )
+
+
 def inspect_dev_execution_semantics(
     *,
     project_dir: Path,
     plan: SensitivityPlan,
     parameter: DevParameterVersion,
     content_report: DevExecutionInputReport,
+    replacement: LifecycleReplacementNormalizationResult | None = None,
+    expected_replacement_hash: str | None = None,
 ) -> DevExecutionSemanticReport:
     """Parse known manifests, cross-bind them, and preserve all content/data blockers."""
 
     plan = SensitivityPlan.model_validate(plan.model_dump(mode="json"))
     parameter = DevParameterVersion.model_validate(parameter.model_dump(mode="json"))
     require_parameter_plan_binding(parameter, plan)
-    content_report = DevExecutionInputReport.model_validate(
-        content_report.model_dump(mode="json")
+    content_report = DevExecutionInputReport.model_validate(content_report.model_dump(mode="json"))
+    if (replacement is None) != (expected_replacement_hash is None):
+        raise ValueError("replacement and its expected hash must be provided together")
+    if replacement is not None:
+        replacement = LifecycleReplacementNormalizationResult.model_validate(
+            replacement.model_dump(mode="json")
+        )
+        if replacement.result_hash != expected_replacement_hash:
+            raise ValueError("unexpected lifecycle replacement input")
+    selections = tuple(
+        InputArtifactSelection(
+            role=artifact.role,
+            relative_path=artifact.relative_path,
+            expected_sha256=artifact.expected_sha256,
+        )
+        for artifact in content_report.artifacts
     )
-    selections = tuple(InputArtifactSelection(
-        role=artifact.role,
-        relative_path=artifact.relative_path,
-        expected_sha256=artifact.expected_sha256,
-    ) for artifact in content_report.artifacts)
     refreshed = inspect_dev_execution_inputs(
         project_dir=project_dir, plan=plan, parameter=parameter, selections=selections
     )
@@ -207,10 +324,13 @@ def inspect_dev_execution_semantics(
         audit_matches = (
             audit.report_hash == plan.input_audit_hash
             and audit.contract_registry_version == plan.contract_registry_version
-            and (split is None or (
-                audit.split_hash == split.split_hash
-                and audit.daily_snapshot_hash == split.daily_snapshot_hash
-            ))
+            and (
+                split is None
+                or (
+                    audit.split_hash == split.split_hash
+                    and audit.daily_snapshot_hash == split.daily_snapshot_hash
+                )
+            )
         )
         if audit_matches:
             validated.add(InputArtifactRole.RESEARCH_INPUT_AUDIT)
@@ -227,7 +347,8 @@ def inspect_dev_execution_semantics(
     universe = parse(InputArtifactRole.UNIVERSE, UniverseBatchResult)
     if universe is not None:
         universe_matches = universe.complete and (
-            split is None or (
+            split is None
+            or (
                 universe.run_version == split.universe_batch_run_version
                 and universe.daily_snapshot_hash == split.daily_snapshot_hash
                 and universe.selection_start == split.segments[0].start
@@ -239,22 +360,48 @@ def inspect_dev_execution_semantics(
         else:
             blockers.append("RUN_INPUT_SEMANTIC_INCOMPLETE_OR_MISMATCH_UNIVERSE")
 
-    normalization = parse(
-        InputArtifactRole.CANDLE_MULTI_TIMEFRAME, NormalizationBatchResult
-    )
+    normalization = parse(InputArtifactRole.CANDLE_MULTI_TIMEFRAME, NormalizationBatchResult)
+    replacement_lineage: LifecycleReplacementSemanticReference | None = None
+    if normalization is not None and replacement is not None:
+        replacement_lineage = _verify_lifecycle_replacement(
+            project_dir=project_dir,
+            normalization=normalization,
+            replacement=replacement,
+        )
+        if replacement_lineage is None:
+            blockers.append("RUN_INPUT_SEMANTIC_INVALID_LIFECYCLE_REPLACEMENT")
     if normalization is not None:
         normalization_matches = normalization.complete and (
             universe is None or normalization.dataset_content_hash == universe.dataset_content_hash
         )
         if normalization_matches:
             validated.add(InputArtifactRole.CANDLE_MULTI_TIMEFRAME)
+        elif (
+            replacement_lineage is not None
+            and replacement is not None
+            and (
+                universe is None
+                or replacement.source_dataset_content_hash == universe.dataset_content_hash
+            )
+        ):
+            blockers.extend(
+                f"RUN_INPUT_REPLACEMENT:{blocker}" for blocker in replacement_lineage.blockers
+            )
+            if replacement_lineage.unavailable_partition_count:
+                blockers.append(
+                    "RUN_INPUT_SEMANTIC_INCOMPLETE_LIFECYCLE_REPLACEMENT_CANDLE_MULTI_TIMEFRAME"
+                )
+            else:
+                validated.add(InputArtifactRole.CANDLE_MULTI_TIMEFRAME)
         else:
             blockers.append("RUN_INPUT_SEMANTIC_INCOMPLETE_OR_MISMATCH_CANDLE_MULTI_TIMEFRAME")
 
     gap_audit = parse(InputArtifactRole.NORMALIZATION_GAP_AUDIT, NormalizationGapAuditReport)
     if gap_audit is not None:
         gap_matches = (
-            normalization is not None and universe is not None and split is not None
+            normalization is not None
+            and universe is not None
+            and split is not None
             and gap_audit.normalization_result_hash == normalization.result_hash
             and gap_audit.daily_snapshot_hash == universe.daily_snapshot_hash
             and gap_audit.daily_snapshot_hash == split.daily_snapshot_hash
@@ -267,9 +414,9 @@ def inspect_dev_execution_semantics(
         )
         if not gap_matches:
             blockers.append("RUN_INPUT_SEMANTIC_MISMATCH_NORMALIZATION_GAP_AUDIT")
-        else:
+        elif replacement_lineage is None:
             blockers.extend(f"RUN_INPUT_GAP_AUDIT:{code}" for code in gap_audit.blockers)
-        # Diagnostic evidence never overrides the complete-normalization requirement.
+        # A verified replacement supersedes old lifecycle-gap diagnostics but not its blockers.
 
     archive = parse(InputArtifactRole.ARCHIVE_MANIFEST, ArchiveBatchResult)
     if archive is not None:
@@ -333,36 +480,44 @@ def inspect_dev_execution_semantics(
         blockers.append("RUN_INPUT_SEMANTIC_VALIDATOR_MISSING_AGGREGATE_TRADES")
 
     validated_roles = tuple(sorted(validated, key=lambda role: role.value))
-    deferred_roles = tuple(
-        role for role in REQUIRED_INPUT_ROLES if role not in validated
-    )
+    deferred_roles = tuple(role for role in REQUIRED_INPUT_ROLES if role not in validated)
     payload: dict[str, Any] = {
-        "schema_version": "dev-execution-semantics/0.1.0",
+        "schema_version": (
+            "dev-execution-semantics/0.2.0"
+            if replacement is not None
+            else "dev-execution-semantics/0.1.0"
+        ),
         "dataset_role": DatasetRole.DEV.value,
         "content_report_hash": content_report.report_hash,
         "validated_roles": [role.value for role in validated_roles],
         "deferred_roles": [role.value for role in deferred_roles],
         "status": "BLOCKED" if blockers else "CHECKS_PASSED",
         "blockers": sorted(set(blockers)),
+        "replacement_lineage": (
+            replacement_lineage.model_dump(mode="json") if replacement_lineage is not None else None
+        ),
         "strategy_executed": False,
         "locked_test_consumed": False,
         "research_authorized": False,
     }
-    return DevExecutionSemanticReport.model_validate({
-        **payload, "report_hash": hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
-    })
+    hash_payload = {key: value for key, value in payload.items() if value is not None}
+    return DevExecutionSemanticReport.model_validate(
+        {
+            **hash_payload,
+            "report_hash": hashlib.sha256(canonical_json_bytes(hash_payload)).hexdigest(),
+        }
+    )
 
 
 def write_dev_execution_semantic_report(
-    report: DevExecutionSemanticReport, data_dir: Path,
+    report: DevExecutionSemanticReport,
+    data_dir: Path,
 ) -> Path:
     report = DevExecutionSemanticReport.model_validate(report.model_dump(mode="json"))
-    destination = (
-        data_dir / "manifests" / "dev_execution_semantics" / f"{report.report_hash}.json"
-    )
+    destination = data_dir / "manifests" / "dev_execution_semantics" / f"{report.report_hash}.json"
     if not destination.resolve().is_relative_to(data_dir.resolve()):
         raise ValueError("semantic report path escapes data directory")
-    content = canonical_json_bytes(report.model_dump(mode="json"))
+    content = canonical_json_bytes(report.model_dump(mode="json", exclude_none=True))
     if destination.is_symlink() or (destination.exists() and destination.read_bytes() != content):
         raise ValueError("existing semantic report changed")
     destination.parent.mkdir(parents=True, exist_ok=True)
