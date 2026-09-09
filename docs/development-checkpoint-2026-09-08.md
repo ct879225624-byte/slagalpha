@@ -269,10 +269,28 @@ Ruff 全仓通过；mypy 全仓 `141 source files` 通过；`git diff --check` �
 场景；Ruff 全仓通过；mypy 全仓 `141 source files` 通过；`git diff --check` 通过。真实语义
 脚本复跑得到相同报告 hash，并按设计返回码 1。
 
+## 第 35 项：ATR/history seed 生命周期决策边界（完成）
+
+新增 `atr-history-seed-audit/0.1.0`。它将当前策略实际使用的最长 SMA 窗口（180 根）与
+Wilder ATR14 的 14 根初始化要求固定为每个 lifecycle stream 的最低同生命周期预热要求，
+并按 exact lifecycle cutoff 给出第一个可用时间。任何 stream 只有同时具备 cutoff 后的完整、
+连续同生命周期前缀且行数不少于 180 时才会得到 `SUFFICIENT`；这个技术结论仍不授予
+ATR reset、history seed 或研究权限。
+
+真实只读复跑得到内容寻址报告
+`0f23e8abbf00ccd8b2911d002eac96d04d3fa5943912b6c88e06be7e6ebc839b`：32/32 个 lifecycle
+stream 均保持 `BLOCKED`。已授权 derivative 只覆盖边界月，无法证明跨月的完整同生命周期
+prefix；部分 1d/4h stream 另少于 180 根，CTKUSDT/1d 为 empty exclusion。AERGO 的三个
+未解析 lifecycle failure 同样独立阻断。未读取旧生命周期数据作为 ATR seed，未修改 frozen
+normalization，未下载、研究、执行策略或消费 locked test。
+
+验证：新增合成审计专项 `7 passed`；Ruff 与 mypy 通过。脚本
+`python scripts/p9_atr_history_seed_audit.py` 按设计返回码 `1`，因为阻断仍存在。
+
 ## 下一项
 
-第 35 项应只处理 ATR/history seed 的可审计决策边界：先证明生命周期 cutoff 后的指标窗口
-能否由现有、同生命周期数据充分预热；若证据不足继续阻断，不得从旧生命周期价格继承 ATR，
-也不得因此开始参数研究。AERGO、历史规则、1m 和 Funding 仍是独立问题。
+实施计划没有定义 P10–P13；在 P9 的剩余独立输入门禁（历史规则、1m、Funding、AERGO identity）
+解除前，真实参数回测与 locked test 仍不得启动。下一步只能继续收集并审计这些权威输入，不能
+虚构后续阶段或用当前边界月 derivative 代替完整生命周期历史。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。

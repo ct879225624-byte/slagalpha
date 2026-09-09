@@ -284,3 +284,7 @@ P0 完成并验收后，只启动 P1。之后每个阶段单独报告：
   `docs/p9-lifecycle-replacement-normalization.md`。只读输入语义审计已能重验 replacement
   lineage、completion receipt 和全部 derivative 文件字节，但缺失分区及其他独立门禁仍
   Fail Closed，见 `docs/p9-lifecycle-replacement-semantics.md`。
+  ATR/history seed 的生命周期决策边界已审计：SMA180 是当前策略的最长指标窗口，
+  ATR14 需至少 14 根；因此每个重上线 stream 必须证明 cutoff 后同一生命周期连续的至少
+  180 根前缀。边界月 derivative 只能证明该月保留行，不构成之后月份的完整 lifecycle
+  prefix。审计报告保持 `BLOCKED`，不授权 ATR reset、history seed、研究、策略或 locked test。
