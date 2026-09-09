@@ -293,3 +293,7 @@ P0 完成并验收后，只启动 P1。之后每个阶段单独报告：
   DEV 结束日之后，且 gap audit 对 DEV 的 direct/lookback/recursive dependency 均为 0；因此
   `CANDLE_MULTI_TIMEFRAME` 对 DEV 已验证。该结论不适用于 VALIDATION/LOCKED_TEST，replacement
   的 AERGO/CTK 边界缺口仍保留，真实研究继续受历史规则、1m 与 Funding 三项门禁阻断。
+- 用户授权后的公开历史规则源核验找到 1 份 2023-11-02 的 Internet Archive
+  `exchangeInfo` 点时响应：248 个 DEV 目标中观察到 186 个、缺少 62 个，但只有单点、
+  第三方存档真实性待复核，且公告计划时间不能证明精确规则切换时刻。内容寻址审计保持
+  0 个可验证成员日、注册表不变；不能用该快照解除历史规则门禁。

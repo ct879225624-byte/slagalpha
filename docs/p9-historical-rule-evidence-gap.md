@@ -58,3 +58,47 @@ symbol、16,440 个 member-days 仍为 0 eligible。
 2026-08-31 首次核验时，本地还没有有效 Git 提交；该工程阻断已在后续基线任务解除。
 2026-09-08 的干净 preflight 已绑定提交 `2aa61a9`，当前剩余问题是历史规则和真实数据，
 而不是 Git 基线。工程输入审计与计划工件仍不得冒充正式策略报告。
+
+## 2026-09-09 公开存档实证审计
+
+经用户授权，只访问公开页面和公开存档，不使用账户、密钥或付费接口。Internet Archive
+CDX 对 Binance 官方 USDⓈ-M `exchangeInfo` URL 在 2023–2025 年只返回 1 份去重后的
+HTTP 200 JSON 捕获：`20231102093209`。已保存解压后的原始响应，SHA-256 为
+`6a3b256bcc2a05d3542897bc45df57417dc33b51506231099186ba9a73f21572`；原始文件继续位于
+Git 忽略的数据目录，不把第三方存档身份冒充 Binance 官方签名。
+
+新增 `historical-rule-source-audit/0.1.0`，将存档捕获时间、CDX digest、原始官方 URL、
+回放 URL、下载时间、原始字节哈希和 DEV rule-gap hash 绑定到不可变报告。真实复跑结果：
+
+- 快照含 272 个 symbol；248 个 DEV 取证目标中可解析观察到 186 个，缺少 62 个；
+- 1 个无关的待交易 `BTCSTUSDT` 条目 `contractType` 为空，审计显式记录为不可解析，
+  但不会再让它遮蔽 BTC/ETH 等可解析目标的精确点时值；
+- 最高优先级 BTC、DOGE、ETH、SOL、XRP 五个目标均提取了完整 PRICE_FILTER、LOT_SIZE
+  和 minimum-notional 点时值；
+- 响应 `serverTime=2023-11-02T08:47:08.849Z`，存档捕获时间为
+  `2023-11-02T09:32:09Z`，两者相差 2,700,151 ms；
+- BTC/ETH 在该响应中已分别为 100/20 USDT，而官方公告仅声明更新会在 10:00 UTC
+  前完成。这可以证明公告计划时间不能当作精确撮合切换时刻；
+- 单个点时观察没有区间连续性，第三方存档真实性仍需人工复核；因此新增的可用
+  DEV member-day 仍为 0，注册表未修改，研究授权保持关闭。
+
+内容寻址报告 hash：
+`01b28cea5c13569cdc70ee3645eae4b2e0f4d22f051313c57b9d379217f5ef4d`。阻断原因固定为：
+
+- `ARCHIVE_SOURCE_AUTHENTICITY_REVIEW_REQUIRED`
+- `DEV_TARGETS_MISSING_FROM_SNAPSHOT`
+- `POINT_IN_TIME_SNAPSHOT_HAS_NO_INTERVAL_CONTINUITY`
+- `SNAPSHOT_CONTAINS_UNPARSEABLE_CONTRACTS`
+
+复跑命令：
+
+```powershell
+.venv\Scripts\python.exe scripts\p9_historical_rule_source_audit.py
+```
+
+该脚本固定预期原始 SHA-256，文件变化会返回 `INVALID_SOURCE`；正常审计仍按设计返回码 1。
+冻结 CPython 3.12.13 下专项历史源与既有 intake 回归 `41 passed`，全量
+`892 passed, 1 skipped`；Ruff 全仓与 mypy `src scripts`（100 source files）通过。
+来源：[Binance Exchange Information](https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data)、
+[Binance 2023 minimum-notional adjustment](https://www.binance.com/en/support/announcement/detail/e4384cba297a4bd2a154be644d5d76f9)、
+[Internet Archive replay](https://web.archive.org/web/20231102093209id_/https://fapi.binance.com/fapi/v1/exchangeInfo)。

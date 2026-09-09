@@ -344,3 +344,38 @@ mypy `src scripts`（98 source files）与 `git diff --check` 均通过。
 Funding 的精确请求范围；真实参数回测与 locked test 继续禁止。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。
+
+## 第 38 项：公开历史规则源点时存档审计（完成）
+
+用户已授权联网查找、下载和审阅公开历史 Binance 合约规则证据；未访问账户、密钥、
+付费接口或交易接口。官方文档继续确认 `/fapi/v1/exchangeInfo` 只返回当前规则。对
+Internet Archive CDX 的 2023–2025 官方 URL 查询只取得 1 份去重后的 HTTP 200 JSON 捕获。
+
+新增 `historical-rule-source-audit/0.1.0` 与只读脚本，固定原始文件 SHA-256、CDX digest、
+存档/响应时间、回放 URL 和 DEV rule-gap hash；逐 symbol 解析避免一个无关坏条目遮蔽其他
+可用点时观察，同时把坏条目完整计入阻断。真实报告 hash 为
+`01b28cea5c13569cdc70ee3645eae4b2e0f4d22f051313c57b9d379217f5ef4d`：
+
+- 快照 272 个 symbol，248 个 DEV 目标中观察到 186 个，缺少 62 个；
+- 最高优先级 BTC/DOGE/ETH/SOL/XRP 五项均提取了精确点时 filters；
+- `BTCSTUSDT` 的空 `contractType` 被显式记录为唯一不可解析条目；
+- 响应时间为 `2023-11-02T08:47:08.849Z`，存档捕获时间晚 2,700,151 ms；
+- BTC/ETH minimum notional 在响应时间已经是 100/20，早于官方公告所述的 10:00 UTC
+  完成时间，进一步证明公告计划时间不能冒充精确切换时间；
+- 点时快照不能证明区间连续性，第三方存档真实性仍待复核，新增 eligible member-day 为 0。
+
+报告保持 `BLOCKED`、`registry_modified=false`、`research_authorized=false`、
+`strategy_executed=false`、`locked_test_consumed=false`。专项历史源与既有 intake 回归
+`41 passed`；冻结 CPython 3.12.13 下全量 `892 passed, 1 skipped`，skip 为既有 Windows
+symlink 场景；Ruff 全仓与 mypy `src scripts`（100 source files）通过。真实脚本复跑 hash
+一致，返回码 1 属预期。项目根目录 `.venv` 当前已漂移到 CPython 3.12.14，环境门禁会按
+设计拒绝；本次没有修改 lock，也没有用漂移环境替代冻结验收。详细结论见
+`docs/p9-historical-rule-evidence-gap.md`。
+
+## 下一项（更新）
+
+公开免费来源已实证到达其证据边界，尚未发现覆盖 DEV 的连续历史完整 filters。继续 P9
+需要新的外部材料：带可信原始采集时间的连续 `exchangeInfo` 快照序列，或能同时提供
+tick、step、min/max quantity、minimum notional 及精确生效区间的可审计数据源。没有该材料
+时，不能生成可信 P4–P6 accepted plan，也不能确定 1m/Funding 的精确请求集。P9 参数研究、
+VALIDATION 与 LOCKED_TEST 均继续禁止；实施计划仍没有正式 P10–P13 定义。

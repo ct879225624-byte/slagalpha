@@ -39,6 +39,7 @@ dist/
 !/data/manifests/exchange_info/
 !/data/manifests/exclusion_ledger/
 !/data/manifests/historical_rule_gate/
+!/data/manifests/historical_rule_source_audit/
 !/data/manifests/identity_registry_build/
 !/data/manifests/lifecycle_boundary_audit/
 !/data/manifests/lifecycle_normalization_remediation_plan/
