@@ -20,8 +20,14 @@ from slagalpha.research.lifecycle_boundaries import build_lifecycle_boundary_aud
 from slagalpha.research.lifecycle_derivative import (
     LifecycleDerivativeAcceptanceError,
     LifecycleScopedDerivativeAcceptance,
+    execute_synthetic_archive_lifecycle_derivative,
     execute_synthetic_lifecycle_derivative,
     write_lifecycle_scoped_derivative_acceptance,
+)
+from slagalpha.research.lifecycle_dry_run import build_lifecycle_dry_run_design_report
+from slagalpha.research.lifecycle_executor_contract import (
+    LifecycleExecutorInterfaceContract,
+    build_lifecycle_executor_interface_contract,
 )
 from slagalpha.research.lifecycle_remediation import (
     LifecycleNormalizationRemediationPlan,
@@ -170,6 +176,33 @@ def _plan_and_source(
     return plan, primary_hashes
 
 
+def _executor_contract(
+    plan: LifecycleNormalizationRemediationPlan,
+) -> LifecycleExecutorInterfaceContract:
+    dry_run = build_lifecycle_dry_run_design_report(
+        plan=plan,
+        expected_plan_hash=plan.plan_hash,
+        expected_normalization_result_hash=plan.source_normalization_result_hash,
+        expected_lifecycle_boundary_audit_hash=plan.lifecycle_boundary_audit_hash,
+    )
+    return build_lifecycle_executor_interface_contract(
+        plan=plan,
+        dry_run_report=dry_run,
+        expected_plan_hash=plan.plan_hash,
+        expected_dry_run_report_hash=dry_run.report_hash,
+    )
+
+
+def _archive_content(tmp_path: Path, symbol: str, interval: str) -> bytes:
+    return (
+        tmp_path
+        / "klines"
+        / symbol
+        / interval
+        / f"{symbol}-{interval}-{PERIOD}.zip"
+    ).read_bytes()
+
+
 def test_synthetic_executor_accepts_filtered_derivative_and_writes_receipt(tmp_path: Path) -> None:
     plan, primary_hashes = _plan_and_source(tmp_path)
     action = next(item for item in plan.actions if item.interval == "4h")
@@ -217,4 +250,83 @@ def test_synthetic_executor_rejects_forged_source_and_plan_membership(tmp_path: 
             action,
             frame,
             source_archive_sha256=primary_hashes["15m"][0],
+        )
+
+
+def test_synthetic_archive_executor_verifies_both_archives_without_materializing(
+    tmp_path: Path,
+) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    action = next(item for item in plan.actions if item.interval == "4h")
+    normalized, acceptance = execute_synthetic_archive_lifecycle_derivative(
+        contract,
+        plan,
+        action,
+        expected_contract_hash=contract.contract_hash,
+        expected_plan_hash=plan.plan_hash,
+        primary_archive=_archive_content(tmp_path, SYMBOL, "4h"),
+        settled_archive=_archive_content(tmp_path, f"{SYMBOL}SETTLED", "4h"),
+        evaluated_at=datetime(2025, 5, 1, tzinfo=UTC),
+    )
+
+    assert normalized is not None
+    assert normalized["close"].astype(str).tolist() == ["105"]
+    assert acceptance.status == "ACCEPTED"
+    assert acceptance.output_materialized is False
+    assert acceptance.normalization_execution_authorized is False
+    assert acceptance.research_authorized is False
+    assert not (tmp_path / "data" / "normalized").exists()
+
+
+@pytest.mark.parametrize(
+    ("source", "message"),
+    [
+        ("primary", "primary archive hash"),
+        ("settled", "settled archive hash"),
+    ],
+)
+def test_synthetic_archive_executor_rejects_tampered_archives(
+    tmp_path: Path,
+    source: str,
+    message: str,
+) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    action = next(item for item in plan.actions if item.interval == "15m")
+    primary = _archive_content(tmp_path, SYMBOL, "15m")
+    settled = _archive_content(tmp_path, f"{SYMBOL}SETTLED", "15m")
+    if source == "primary":
+        primary += b"tampered"
+    else:
+        settled += b"tampered"
+
+    with pytest.raises(LifecycleDerivativeAcceptanceError, match=message):
+        execute_synthetic_archive_lifecycle_derivative(
+            contract,
+            plan,
+            action,
+            expected_contract_hash=contract.contract_hash,
+            expected_plan_hash=plan.plan_hash,
+            primary_archive=primary,
+            settled_archive=settled,
+        )
+
+
+def test_synthetic_archive_executor_rejects_untrusted_contract(tmp_path: Path) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    action = plan.actions[0]
+
+    with pytest.raises(LifecycleDerivativeAcceptanceError, match="unexpected executor"):
+        execute_synthetic_archive_lifecycle_derivative(
+            contract,
+            plan,
+            action,
+            expected_contract_hash="0" * 64,
+            expected_plan_hash=plan.plan_hash,
+            primary_archive=_archive_content(tmp_path, SYMBOL, action.interval),
+            settled_archive=_archive_content(
+                tmp_path, f"{SYMBOL}SETTLED", action.interval
+            ),
         )

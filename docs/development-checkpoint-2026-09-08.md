@@ -148,10 +148,27 @@ mypy 相关文件通过。最终验证为全部 lifecycle 回归 `20 passed`、R
 全仓 `159 source files` 通过、`git diff --check` 通过。第 27 项提交前完成的全量结果
 `851 passed, 1 skipped` 仍是当前最近一次全量基线。
 
+## 第 29 项：synthetic archive executor core（完成）
+
+在既有 synthetic-only 内存 executor 外增加 ZIP 字节适配层。新入口不接受文件路径或输出
+目录，只接收调用方提供的内存 ZIP 字节；先重验冻结 executor contract、可信 plan 与 action
+membership，再核对主/SETTLED archive hash、CSV member、rows hash 和 SETTLED evidence
+行数。只有主 symbol DataFrame 会进入既有 cutoff/normalization 路径，SETTLED 永远不合并。
+
+合成正例确认 exact cutoff 后结果只含主 symbol 价格，且没有创建 `data/normalized`；反例
+覆盖主 ZIP 篡改、SETTLED ZIP 篡改和不可信 contract。既有 acceptance 继续固定
+`output_materialized=false`、normalization/ATR reset/history seed/历史规则放行/research/
+strategy/locked test 授权全部为 false。本项没有读取真实 ZIP、写入 Parquet、下载行情、
+连接账户、交易、部署或 push。
+
+验证结果：冻结 CPython 3.12.13 下第 29 项合并专项 `7 passed`；Kline 与全部 lifecycle
+扩大回归 `35 passed`；Ruff 全仓通过；mypy 全仓 `159 source files` 通过；
+`git diff --check` 通过。最近一次完整 pytest 基线仍为第 27 项的 `851 passed, 1 skipped`。
+
 ## 下一项
 
-第 29 项只实现契约约束下的 executor 代码路径并用合成 archive 验收；不得对真实 ZIP
-执行，不得物化真实 derivative 数据。实现必须先逐 action 验证可信 plan membership、
-archive/rows hash 和 exact cutoff，并继续保持所有研究与策略门禁关闭。
+第 30 项只验收 synthetic output 的 staging、完整校验、原子发布、幂等恢复与冲突拒绝；
+输出仍必须限定在测试临时目录，不得读取真实 ZIP 或写入仓库 `data/normalized`。真实执行、
+ATR reset/history seed、历史规则和研究门禁继续保持关闭。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。

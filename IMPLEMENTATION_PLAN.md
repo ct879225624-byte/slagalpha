@@ -1,6 +1,6 @@
 # Crypto Trading Copilot 实施计划
 
-状态：P0–P8、P9.1、P9.2a、P9.2b 输入门禁、P9.2c 生命周期边界 remediation plan、P9.2d synthetic derivative acceptance、P9.2e real-input dry-run design audit 及 P9.2f executor interface contract 已完成；真实研究仍阻断
+状态：P0–P8、P9.1、P9.2a、P9.2b 输入门禁、P9.2c 生命周期边界 remediation plan、P9.2d synthetic derivative acceptance、P9.2e real-input dry-run design audit、P9.2f executor interface contract 及 P9.2g synthetic archive executor core 已完成；真实研究仍阻断
 依据：`CRYPTO_AGENT_DEVELOPMENT_SPEC.md`  
 制定日期：2026-08-26
 
@@ -273,5 +273,6 @@ P0 完成并验收后，只启动 P1。之后每个阶段单独报告：
   见 `docs/p9-replay-data-contract.md`。
 - lifecycle derivative executor 的生产实现前接口已冻结，绑定 remediation plan 与 dry-run
   design 精确 hash；SETTLED 永不合并、独立 namespace、原子发布、幂等恢复和冲突不覆盖
-  均为强制策略。executor 尚未实现或执行，见
+  均为强制策略。executor 的 ZIP 读取核心仅以调用方提供的合成内存字节完成验收；没有
+  文件路径或写盘入口，真实 executor 尚未执行，见
   `docs/p9-lifecycle-derivative-executor-contract.md`。

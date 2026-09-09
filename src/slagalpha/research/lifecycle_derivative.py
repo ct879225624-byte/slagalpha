@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Literal, Self
 
@@ -12,8 +13,16 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from slagalpha.data.archive import ArchiveSpec
-from slagalpha.data.klines import RAW_COLUMNS, normalize_klines
+from slagalpha.data.klines import (
+    RAW_COLUMNS,
+    KlineArchiveError,
+    normalize_klines,
+    read_archive_csv,
+)
 from slagalpha.reporting.run_manifest import _publish_immutable, canonical_json_bytes
+from slagalpha.research.lifecycle_executor_contract import (
+    LifecycleExecutorInterfaceContract,
+)
 from slagalpha.research.lifecycle_remediation import (
     LifecycleIntervalRemediationAction,
     LifecycleNormalizationRemediationPlan,
@@ -275,6 +284,86 @@ def execute_synthetic_lifecycle_derivative(
         }
     )
     return normalized, acceptance
+
+
+def execute_synthetic_archive_lifecycle_derivative(
+    contract: LifecycleExecutorInterfaceContract,
+    plan: LifecycleNormalizationRemediationPlan,
+    action: LifecycleIntervalRemediationAction,
+    *,
+    expected_contract_hash: str,
+    expected_plan_hash: str,
+    primary_archive: bytes,
+    settled_archive: bytes,
+    evaluated_at: datetime | None = None,
+) -> tuple[pd.DataFrame | None, LifecycleScopedDerivativeAcceptance]:
+    """Exercise the frozen executor path using in-memory synthetic ZIP bytes only."""
+
+    try:
+        contract = LifecycleExecutorInterfaceContract.model_validate(
+            contract.model_dump(mode="json")
+        )
+        plan = LifecycleNormalizationRemediationPlan.model_validate(
+            plan.model_dump(mode="json")
+        )
+        action = LifecycleIntervalRemediationAction.model_validate(
+            action.model_dump(mode="json")
+        )
+    except ValueError as error:
+        raise LifecycleDerivativeAcceptanceError(
+            "synthetic archive executor inputs are invalid"
+        ) from error
+    if contract.contract_hash != expected_contract_hash:
+        raise LifecycleDerivativeAcceptanceError("unexpected executor contract")
+    if plan.plan_hash != expected_plan_hash:
+        raise LifecycleDerivativeAcceptanceError("unexpected remediation plan")
+    if contract.remediation_plan_hash != plan.plan_hash:
+        raise LifecycleDerivativeAcceptanceError("executor contract does not reference the plan")
+    if contract.source_normalization_result_hash != plan.source_normalization_result_hash:
+        raise LifecycleDerivativeAcceptanceError("normalization lineage does not reconcile")
+    if contract.lifecycle_boundary_audit_hash != plan.lifecycle_boundary_audit_hash:
+        raise LifecycleDerivativeAcceptanceError("lifecycle audit lineage does not reconcile")
+    if action not in plan.actions:
+        raise LifecycleDerivativeAcceptanceError(
+            "action is not part of the trusted remediation plan"
+        )
+
+    primary_archive_hash = hashlib.sha256(primary_archive).hexdigest()
+    if primary_archive_hash != action.primary_archive_sha256:
+        raise LifecycleDerivativeAcceptanceError("primary archive hash disagrees with action")
+    settled_archive_hash = hashlib.sha256(settled_archive).hexdigest()
+    if settled_archive_hash != action.settled_archive_sha256:
+        raise LifecycleDerivativeAcceptanceError("settled archive hash disagrees with action")
+
+    month = datetime.strptime(action.evidence_period, "%Y-%m").date()
+    primary_spec = ArchiveSpec(
+        symbol=action.symbol,
+        interval=action.interval,
+        year=month.year,
+        month=month.month,
+    )
+    settled_spec = primary_spec.model_copy(update={"symbol": action.settled_symbol})
+    try:
+        primary_frame = read_archive_csv(BytesIO(primary_archive), primary_spec)
+        settled_frame = read_archive_csv(BytesIO(settled_archive), settled_spec)
+    except KlineArchiveError as error:
+        raise LifecycleDerivativeAcceptanceError(
+            "synthetic archive layout is invalid"
+        ) from error
+    if _source_rows_hash(primary_frame) != action.primary_rows_sha256:
+        raise LifecycleDerivativeAcceptanceError("primary rows hash disagrees with action")
+    if _source_rows_hash(settled_frame) != action.settled_rows_sha256:
+        raise LifecycleDerivativeAcceptanceError("settled rows hash disagrees with action")
+    if len(settled_frame) != action.settled_evidence_row_count:
+        raise LifecycleDerivativeAcceptanceError("settled evidence row count disagrees with action")
+
+    return execute_synthetic_lifecycle_derivative(
+        plan,
+        action,
+        primary_frame,
+        source_archive_sha256=primary_archive_hash,
+        evaluated_at=evaluated_at,
+    )
 
 
 def write_lifecycle_scoped_derivative_acceptance(

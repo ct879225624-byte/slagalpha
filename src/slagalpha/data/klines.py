@@ -9,7 +9,7 @@ import zipfile
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, BinaryIO, Literal
 from uuid import uuid4
 
 import pandas as pd
@@ -123,7 +123,7 @@ def _expected_csv_filename(spec: ArchiveSpec) -> str:
     return f"{spec.filename.removesuffix('.zip')}.csv"
 
 
-def read_archive_csv(archive: Path, spec: ArchiveSpec) -> pd.DataFrame:
+def read_archive_csv(archive: Path | BinaryIO, spec: ArchiveSpec) -> pd.DataFrame:
     """Read exactly one expected CSV member as source strings."""
 
     expected_member = _expected_csv_filename(spec)
