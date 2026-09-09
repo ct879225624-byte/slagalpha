@@ -184,10 +184,31 @@ action SHA-256 的 16 位前缀，避免临时文件名越过传统路径长度�
 lifecycle 扩大回归 `39 passed`；Ruff 全仓通过；mypy 全仓 `159 source files` 通过；
 `git diff --check` 通过。最近一次完整 pytest 基线仍为 `851 passed, 1 skipped`。
 
-## 下一项
+## 第 31 项：synthetic batch orchestration 与 completion receipt（完成）
 
-第 31 项只实现 synthetic batch orchestration 与内容寻址 batch receipt：验证多 action 输出
-逐项对应、总行数守恒、失败不发布完成 receipt，并继续禁止真实 ZIP、仓库 normalized 写入、
-ATR reset/history seed、历史规则放行和研究执行。
+新增 canonical action 顺序的 synthetic batch executor。调用方必须提供与可信 plan action
+集合完全相等的主/SETTLED 内存 ZIP 集；batch 先复核 contract 与 plan 的 action 数及总行数，
+再逐项复用第 29、30 项执行/发布路径。只有全部 action 成功后，才发布
+`lifecycle-derivative-synthetic-batch/0.1.0` 内容寻址 receipt。
+
+receipt 绑定 contract、plan、每项 acceptance hash、相对输出路径和输出 SHA-256，并核对
+action 状态数及 source/excluded/retained/derivative 全量行守恒。它显式区分
+`synthetic_output_materialized=true` 与 `real_output_materialized=false`，所有真实 normalization、
+ATR reset/history seed、历史规则、research、strategy、locked test 授权保持 false。
+
+合成正例覆盖 4 个 15m/1h/4h/1d action 的完整 batch 与幂等复跑；末项 ZIP 篡改反例证明
+可能保留可恢复的已验证逐项输出，但绝不会发布 batch completion receipt。未读取真实 ZIP、
+写入仓库 normalized、下载行情、连接账户、交易、部署或 push。
+
+验证结果：冻结 CPython 3.12.13 下合并专项 `14 passed`；Kline 与全部 lifecycle 扩大回归
+`42 passed`；Ruff 全仓通过；mypy 全仓 `159 source files` 通过；`git diff --check` 通过。
+最近一次完整 pytest 基线仍为 `851 passed, 1 skipped`。
+
+## 下一项 / 当前授权边界
+
+下一步若进入真实 lifecycle derivative execution，必须先获得明确批准；当前 contract 的
+`REAL_DERIVATIVE_EXECUTION_NOT_AUTHORIZED` 仍生效。本轮不得自行读取 32 个真实主/SETTLED
+ZIP 或写入仓库 `data/normalized/lifecycle_scoped/v0.1.0`。即使未来完成该执行，历史规则
+证据、1m 与 Funding 等独立 P9 输入门禁仍需各自解除，不能直接启动研究。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。

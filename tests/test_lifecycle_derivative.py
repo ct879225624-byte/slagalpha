@@ -20,6 +20,8 @@ from slagalpha.research.lifecycle_boundaries import build_lifecycle_boundary_aud
 from slagalpha.research.lifecycle_derivative import (
     LifecycleDerivativeAcceptanceError,
     LifecycleScopedDerivativeAcceptance,
+    LifecycleSyntheticBatchReceipt,
+    execute_and_publish_synthetic_lifecycle_batch,
     execute_synthetic_archive_lifecycle_derivative,
     execute_synthetic_lifecycle_derivative,
     publish_synthetic_lifecycle_derivative,
@@ -202,6 +204,19 @@ def _archive_content(tmp_path: Path, symbol: str, interval: str) -> bytes:
         / interval
         / f"{symbol}-{interval}-{PERIOD}.zip"
     ).read_bytes()
+
+
+def _archive_set(
+    tmp_path: Path,
+    plan: LifecycleNormalizationRemediationPlan,
+) -> dict[tuple[str, str], tuple[bytes, bytes]]:
+    return {
+        (action.symbol, action.interval): (
+            _archive_content(tmp_path, action.symbol, action.interval),
+            _archive_content(tmp_path, action.settled_symbol, action.interval),
+        )
+        for action in plan.actions
+    }
 
 
 def test_synthetic_executor_accepts_filtered_derivative_and_writes_receipt(tmp_path: Path) -> None:
@@ -475,3 +490,88 @@ def test_synthetic_publication_rejects_repository_normalized_namespace(
             synthetic_workspace_root=repository_root,
             normalized_at=datetime(2025, 5, 1, tzinfo=UTC),
         )
+
+
+def test_synthetic_batch_publishes_completion_receipt_last_and_idempotently(
+    tmp_path: Path,
+) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    synthetic_root = tmp_path / "synthetic-workspace"
+
+    receipt, path = execute_and_publish_synthetic_lifecycle_batch(
+        contract,
+        plan,
+        _archive_set(tmp_path, plan),
+        expected_contract_hash=contract.contract_hash,
+        expected_plan_hash=plan.plan_hash,
+        synthetic_workspace_root=synthetic_root,
+        normalized_at=datetime(2025, 5, 1, tzinfo=UTC),
+    )
+    repeated, repeated_path = execute_and_publish_synthetic_lifecycle_batch(
+        contract,
+        plan,
+        _archive_set(tmp_path, plan),
+        expected_contract_hash=contract.contract_hash,
+        expected_plan_hash=plan.plan_hash,
+        synthetic_workspace_root=synthetic_root,
+        normalized_at=datetime(2025, 5, 1, tzinfo=UTC),
+    )
+
+    assert repeated == receipt
+    assert repeated_path == path
+    assert path.stem == receipt.batch_hash
+    assert receipt.action_count == plan.action_count == 4
+    assert receipt.source_row_count == plan.boundary_month_source_row_count
+    assert receipt.excluded_row_count == plan.boundary_month_excluded_row_count
+    assert receipt.retained_row_count == plan.boundary_month_expected_retained_row_count
+    assert receipt.derivative_row_count == receipt.retained_row_count
+    assert receipt.real_output_materialized is False
+    assert receipt.research_authorized is False
+    assert LifecycleSyntheticBatchReceipt.model_validate_json(path.read_bytes()) == receipt
+
+
+def test_synthetic_batch_failure_does_not_publish_completion_receipt(tmp_path: Path) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    archives = _archive_set(tmp_path, plan)
+    last_key = sorted(archives)[-1]
+    primary, settled = archives[last_key]
+    archives[last_key] = (primary + b"tampered", settled)
+    synthetic_root = tmp_path / "synthetic-workspace"
+
+    with pytest.raises(LifecycleDerivativeAcceptanceError, match="primary archive hash"):
+        execute_and_publish_synthetic_lifecycle_batch(
+            contract,
+            plan,
+            archives,
+            expected_contract_hash=contract.contract_hash,
+            expected_plan_hash=plan.plan_hash,
+            synthetic_workspace_root=synthetic_root,
+            normalized_at=datetime(2025, 5, 1, tzinfo=UTC),
+        )
+
+    assert not (
+        synthetic_root / "data" / "manifests" / "lifecycle_derivative_synthetic_batch"
+    ).exists()
+
+
+def test_synthetic_batch_rejects_incomplete_archive_set(tmp_path: Path) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    archives = _archive_set(tmp_path, plan)
+    archives.pop(next(iter(archives)))
+    synthetic_root = tmp_path / "synthetic-workspace"
+
+    with pytest.raises(LifecycleDerivativeAcceptanceError, match="archive set is incomplete"):
+        execute_and_publish_synthetic_lifecycle_batch(
+            contract,
+            plan,
+            archives,
+            expected_contract_hash=contract.contract_hash,
+            expected_plan_hash=plan.plan_hash,
+            synthetic_workspace_root=synthetic_root,
+            normalized_at=datetime(2025, 5, 1, tzinfo=UTC),
+        )
+
+    assert not synthetic_root.exists()

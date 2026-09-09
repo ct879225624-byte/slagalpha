@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
 from typing import Any, Literal, Self
 
@@ -164,6 +165,115 @@ class LifecycleScopedDerivativeAcceptance(BaseModel):
         payload = self.model_dump(mode="json", exclude={"acceptance_hash"})
         if self.acceptance_hash != hashlib.sha256(canonical_json_bytes(payload)).hexdigest():
             raise ValueError("lifecycle derivative acceptance hash mismatch")
+        return self
+
+
+class LifecycleSyntheticBatchOutput(BaseModel):
+    """One canonical output entry in a synthetic batch receipt."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    symbol: str
+    interval: Literal["15m", "1h", "4h", "1d"]
+    status: Literal["ACCEPTED", "EXCLUDED_EMPTY_BOUNDARY_PARTITION"]
+    acceptance_hash: str
+    output_relative_path: str
+    output_sha256: str
+    source_row_count: int = Field(gt=0)
+    excluded_row_count: int = Field(ge=0)
+    retained_row_count: int = Field(ge=0)
+    derivative_row_count: int = Field(ge=0)
+
+    @field_validator("acceptance_hash", "output_sha256")
+    @classmethod
+    def validate_hash(cls, value: str) -> str:
+        return _require_sha256(value)
+
+    @field_validator("output_relative_path")
+    @classmethod
+    def validate_relative_path(cls, value: str) -> str:
+        path = PurePosixPath(value)
+        if path.is_absolute() or ".." in path.parts or value != path.as_posix():
+            raise ValueError("synthetic batch output path must be canonical and relative")
+        return value
+
+    @model_validator(mode="after")
+    def validate_counts(self) -> Self:
+        if self.excluded_row_count + self.retained_row_count != self.source_row_count:
+            raise ValueError("synthetic batch output rows do not reconcile")
+        if self.derivative_row_count != self.retained_row_count:
+            raise ValueError("synthetic batch derivative rows do not reconcile")
+        return self
+
+
+def _batch_hash(payload: dict[str, Any]) -> str:
+    candidate = LifecycleSyntheticBatchReceipt.model_construct(
+        **payload, batch_hash="0" * 64
+    )
+    canonical = candidate.model_dump(mode="json", exclude={"batch_hash"})
+    return hashlib.sha256(canonical_json_bytes(canonical)).hexdigest()
+
+
+class LifecycleSyntheticBatchReceipt(BaseModel):
+    """Content-addressed completion marker for a fully successful synthetic batch."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    schema_version: Literal["lifecycle-derivative-synthetic-batch/0.1.0"] = (
+        "lifecycle-derivative-synthetic-batch/0.1.0"
+    )
+    execution_scope: Literal["SYNTHETIC_ONLY"] = "SYNTHETIC_ONLY"
+    executor_contract_hash: str
+    remediation_plan_hash: str
+    action_count: int = Field(gt=0)
+    accepted_action_count: int = Field(ge=0)
+    excluded_action_count: int = Field(ge=0)
+    source_row_count: int = Field(ge=0)
+    excluded_row_count: int = Field(ge=0)
+    retained_row_count: int = Field(ge=0)
+    derivative_row_count: int = Field(ge=0)
+    outputs: tuple[LifecycleSyntheticBatchOutput, ...]
+    synthetic_output_materialized: Literal[True] = True
+    real_output_materialized: Literal[False] = False
+    normalization_execution_authorized: Literal[False] = False
+    atr_reset_authorized: Literal[False] = False
+    history_seed_authorized: Literal[False] = False
+    historical_rule_gate_relaxation_authorized: Literal[False] = False
+    research_authorized: Literal[False] = False
+    strategy_executed: Literal[False] = False
+    locked_test_consumed: Literal[False] = False
+    status: Literal["SYNTHETIC_ACCEPTED"] = "SYNTHETIC_ACCEPTED"
+    batch_hash: str
+
+    @field_validator("executor_contract_hash", "remediation_plan_hash", "batch_hash")
+    @classmethod
+    def validate_hash(cls, value: str) -> str:
+        return _require_sha256(value)
+
+    @model_validator(mode="after")
+    def validate_batch(self) -> Self:
+        keys = tuple((item.symbol, item.interval) for item in self.outputs)
+        if keys != tuple(sorted(set(keys))):
+            raise ValueError("synthetic batch outputs must be unique and canonical")
+        if len(self.outputs) != self.action_count:
+            raise ValueError("synthetic batch output count does not match actions")
+        if self.accepted_action_count != sum(
+            item.status == "ACCEPTED" for item in self.outputs
+        ) or self.excluded_action_count != sum(
+            item.status == "EXCLUDED_EMPTY_BOUNDARY_PARTITION" for item in self.outputs
+        ):
+            raise ValueError("synthetic batch action statuses do not reconcile")
+        if sum(item.source_row_count for item in self.outputs) != self.source_row_count:
+            raise ValueError("synthetic batch source rows do not reconcile")
+        if sum(item.excluded_row_count for item in self.outputs) != self.excluded_row_count:
+            raise ValueError("synthetic batch excluded rows do not reconcile")
+        if sum(item.retained_row_count for item in self.outputs) != self.retained_row_count:
+            raise ValueError("synthetic batch retained rows do not reconcile")
+        if sum(item.derivative_row_count for item in self.outputs) != self.derivative_row_count:
+            raise ValueError("synthetic batch derivative rows do not reconcile")
+        payload = self.model_dump(mode="json", exclude={"batch_hash"})
+        if self.batch_hash != hashlib.sha256(canonical_json_bytes(payload)).hexdigest():
+            raise ValueError("synthetic lifecycle batch hash mismatch")
         return self
 
 
@@ -510,6 +620,137 @@ def publish_synthetic_lifecycle_derivative(
     if destination.read_bytes() != staged_content:
         raise LifecycleDerivativeAcceptanceError("published synthetic derivative changed")
     return destination, hashlib.sha256(staged_content).hexdigest()
+
+
+def execute_and_publish_synthetic_lifecycle_batch(
+    contract: LifecycleExecutorInterfaceContract,
+    plan: LifecycleNormalizationRemediationPlan,
+    archives: Mapping[tuple[str, str], tuple[bytes, bytes]],
+    *,
+    expected_contract_hash: str,
+    expected_plan_hash: str,
+    synthetic_workspace_root: Path,
+    normalized_at: datetime,
+) -> tuple[LifecycleSyntheticBatchReceipt, Path]:
+    """Complete every synthetic action before publishing one batch receipt."""
+
+    try:
+        contract = LifecycleExecutorInterfaceContract.model_validate(
+            contract.model_dump(mode="json")
+        )
+        plan = LifecycleNormalizationRemediationPlan.model_validate(
+            plan.model_dump(mode="json")
+        )
+    except ValueError as error:
+        raise LifecycleDerivativeAcceptanceError(
+            "synthetic batch inputs are invalid"
+        ) from error
+    if contract.contract_hash != expected_contract_hash:
+        raise LifecycleDerivativeAcceptanceError("unexpected executor contract")
+    if plan.plan_hash != expected_plan_hash or contract.remediation_plan_hash != plan.plan_hash:
+        raise LifecycleDerivativeAcceptanceError("unexpected remediation plan")
+    if (
+        contract.action_count,
+        contract.expected_source_row_count,
+        contract.expected_excluded_row_count,
+        contract.expected_retained_row_count,
+    ) != (
+        plan.action_count,
+        plan.boundary_month_source_row_count,
+        plan.boundary_month_excluded_row_count,
+        plan.boundary_month_expected_retained_row_count,
+    ):
+        raise LifecycleDerivativeAcceptanceError("batch contract row counts do not match plan")
+    expected_keys = {(action.symbol, action.interval) for action in plan.actions}
+    if set(archives) != expected_keys:
+        raise LifecycleDerivativeAcceptanceError("synthetic batch archive set is incomplete")
+
+    root = synthetic_workspace_root.resolve()
+    outputs: list[LifecycleSyntheticBatchOutput] = []
+    for action in sorted(plan.actions, key=lambda item: (item.symbol, item.interval)):
+        primary_archive, settled_archive = archives[(action.symbol, action.interval)]
+        normalized, acceptance = execute_synthetic_archive_lifecycle_derivative(
+            contract,
+            plan,
+            action,
+            expected_contract_hash=expected_contract_hash,
+            expected_plan_hash=expected_plan_hash,
+            primary_archive=primary_archive,
+            settled_archive=settled_archive,
+            evaluated_at=normalized_at,
+        )
+        output_path, output_hash = publish_synthetic_lifecycle_derivative(
+            contract,
+            action,
+            normalized,
+            acceptance,
+            expected_contract_hash=expected_contract_hash,
+            synthetic_workspace_root=root,
+            normalized_at=normalized_at,
+        )
+        outputs.append(
+            LifecycleSyntheticBatchOutput(
+                symbol=action.symbol,
+                interval=action.interval,
+                status=acceptance.status,
+                acceptance_hash=acceptance.acceptance_hash,
+                output_relative_path=output_path.relative_to(root).as_posix(),
+                output_sha256=output_hash,
+                source_row_count=acceptance.source_row_count,
+                excluded_row_count=acceptance.excluded_row_count,
+                retained_row_count=acceptance.retained_row_count,
+                derivative_row_count=acceptance.derivative_row_count,
+            )
+        )
+
+    output_tuple = tuple(outputs)
+    payload: dict[str, Any] = {
+        "executor_contract_hash": contract.contract_hash,
+        "remediation_plan_hash": plan.plan_hash,
+        "action_count": len(output_tuple),
+        "accepted_action_count": sum(item.status == "ACCEPTED" for item in output_tuple),
+        "excluded_action_count": sum(
+            item.status == "EXCLUDED_EMPTY_BOUNDARY_PARTITION" for item in output_tuple
+        ),
+        "source_row_count": sum(item.source_row_count for item in output_tuple),
+        "excluded_row_count": sum(item.excluded_row_count for item in output_tuple),
+        "retained_row_count": sum(item.retained_row_count for item in output_tuple),
+        "derivative_row_count": sum(item.derivative_row_count for item in output_tuple),
+        "outputs": output_tuple,
+        "synthetic_output_materialized": True,
+        "real_output_materialized": False,
+        "normalization_execution_authorized": False,
+        "atr_reset_authorized": False,
+        "history_seed_authorized": False,
+        "historical_rule_gate_relaxation_authorized": False,
+        "research_authorized": False,
+        "strategy_executed": False,
+        "locked_test_consumed": False,
+        "status": "SYNTHETIC_ACCEPTED",
+    }
+    receipt = LifecycleSyntheticBatchReceipt.model_validate(
+        {**payload, "batch_hash": _batch_hash(payload)}
+    )
+    destination = (
+        root
+        / "data"
+        / "manifests"
+        / "lifecycle_derivative_synthetic_batch"
+        / f"{receipt.batch_hash}.json"
+    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    content = canonical_json_bytes(receipt.model_dump(mode="json"))
+    if destination.is_symlink() or (
+        destination.exists() and destination.read_bytes() != content
+    ):
+        raise LifecycleDerivativeAcceptanceError("existing synthetic batch receipt changed")
+    try:
+        _publish_immutable(destination, content)
+    except RunManifestError as error:
+        raise LifecycleDerivativeAcceptanceError(
+            "synthetic batch receipt publication conflict"
+        ) from error
+    return receipt, destination
 
 
 def write_lifecycle_scoped_derivative_acceptance(
