@@ -22,6 +22,7 @@ from slagalpha.research.lifecycle_derivative import (
     LifecycleScopedDerivativeAcceptance,
     execute_synthetic_archive_lifecycle_derivative,
     execute_synthetic_lifecycle_derivative,
+    publish_synthetic_lifecycle_derivative,
     write_lifecycle_scoped_derivative_acceptance,
 )
 from slagalpha.research.lifecycle_dry_run import build_lifecycle_dry_run_design_report
@@ -329,4 +330,148 @@ def test_synthetic_archive_executor_rejects_untrusted_contract(tmp_path: Path) -
             settled_archive=_archive_content(
                 tmp_path, f"{SYMBOL}SETTLED", action.interval
             ),
+        )
+
+
+def test_synthetic_publication_is_staged_immutable_and_idempotent(tmp_path: Path) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    action = next(item for item in plan.actions if item.interval == "4h")
+    normalized, acceptance = execute_synthetic_archive_lifecycle_derivative(
+        contract,
+        plan,
+        action,
+        expected_contract_hash=contract.contract_hash,
+        expected_plan_hash=plan.plan_hash,
+        primary_archive=_archive_content(tmp_path, SYMBOL, "4h"),
+        settled_archive=_archive_content(tmp_path, f"{SYMBOL}SETTLED", "4h"),
+        evaluated_at=datetime(2025, 5, 1, tzinfo=UTC),
+    )
+    synthetic_root = tmp_path / "synthetic-workspace"
+    normalized_at = datetime(2025, 5, 1, tzinfo=UTC)
+
+    path, parquet_hash = publish_synthetic_lifecycle_derivative(
+        contract,
+        action,
+        normalized,
+        acceptance,
+        expected_contract_hash=contract.contract_hash,
+        synthetic_workspace_root=synthetic_root,
+        normalized_at=normalized_at,
+    )
+    repeated_path, repeated_hash = publish_synthetic_lifecycle_derivative(
+        contract,
+        action,
+        normalized,
+        acceptance,
+        expected_contract_hash=contract.contract_hash,
+        synthetic_workspace_root=synthetic_root,
+        normalized_at=normalized_at,
+    )
+
+    assert path == repeated_path
+    assert parquet_hash == repeated_hash
+    assert path.suffix == ".parquet"
+    assert path.is_relative_to(synthetic_root.resolve())
+    assert not list(synthetic_root.glob(".lifecycle-stage-*"))
+    assert not (synthetic_root / contract.frozen_namespace).exists()
+
+
+def test_synthetic_publication_rejects_existing_conflict(tmp_path: Path) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    action = next(item for item in plan.actions if item.interval == "4h")
+    normalized, acceptance = execute_synthetic_archive_lifecycle_derivative(
+        contract,
+        plan,
+        action,
+        expected_contract_hash=contract.contract_hash,
+        expected_plan_hash=plan.plan_hash,
+        primary_archive=_archive_content(tmp_path, SYMBOL, "4h"),
+        settled_archive=_archive_content(tmp_path, f"{SYMBOL}SETTLED", "4h"),
+        evaluated_at=datetime(2025, 5, 1, tzinfo=UTC),
+    )
+    synthetic_root = tmp_path / "synthetic-workspace"
+    path, _ = publish_synthetic_lifecycle_derivative(
+        contract,
+        action,
+        normalized,
+        acceptance,
+        expected_contract_hash=contract.contract_hash,
+        synthetic_workspace_root=synthetic_root,
+        normalized_at=datetime(2025, 5, 1, tzinfo=UTC),
+    )
+    path.write_bytes(b"conflict")
+
+    with pytest.raises(LifecycleDerivativeAcceptanceError, match="conflicts"):
+        publish_synthetic_lifecycle_derivative(
+            contract,
+            action,
+            normalized,
+            acceptance,
+            expected_contract_hash=contract.contract_hash,
+            synthetic_workspace_root=synthetic_root,
+            normalized_at=datetime(2025, 5, 1, tzinfo=UTC),
+        )
+    assert not list(synthetic_root.glob(".lifecycle-stage-*"))
+
+
+def test_synthetic_publication_uses_receipt_only_for_empty_partition(
+    tmp_path: Path,
+) -> None:
+    plan, _ = _plan_and_source(tmp_path, daily_only_boundary=True)
+    contract = _executor_contract(plan)
+    action = next(item for item in plan.actions if item.interval == "1d")
+    normalized, acceptance = execute_synthetic_archive_lifecycle_derivative(
+        contract,
+        plan,
+        action,
+        expected_contract_hash=contract.contract_hash,
+        expected_plan_hash=plan.plan_hash,
+        primary_archive=_archive_content(tmp_path, SYMBOL, "1d"),
+        settled_archive=_archive_content(tmp_path, f"{SYMBOL}SETTLED", "1d"),
+    )
+    synthetic_root = tmp_path / "synthetic-workspace"
+
+    path, _ = publish_synthetic_lifecycle_derivative(
+        contract,
+        action,
+        normalized,
+        acceptance,
+        expected_contract_hash=contract.contract_hash,
+        synthetic_workspace_root=synthetic_root,
+        normalized_at=datetime(2025, 5, 1, tzinfo=UTC),
+    )
+
+    assert path.suffix == ".json"
+    assert not list(synthetic_root.rglob("*.parquet"))
+
+
+def test_synthetic_publication_rejects_repository_normalized_namespace(
+    tmp_path: Path,
+) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    action = next(item for item in plan.actions if item.interval == "4h")
+    normalized, acceptance = execute_synthetic_archive_lifecycle_derivative(
+        contract,
+        plan,
+        action,
+        expected_contract_hash=contract.contract_hash,
+        expected_plan_hash=plan.plan_hash,
+        primary_archive=_archive_content(tmp_path, SYMBOL, "4h"),
+        settled_archive=_archive_content(tmp_path, f"{SYMBOL}SETTLED", "4h"),
+        evaluated_at=datetime(2025, 5, 1, tzinfo=UTC),
+    )
+    repository_root = Path(__file__).resolve().parents[1]
+
+    with pytest.raises(LifecycleDerivativeAcceptanceError, match="repository normalized"):
+        publish_synthetic_lifecycle_derivative(
+            contract,
+            action,
+            normalized,
+            acceptance,
+            expected_contract_hash=contract.contract_hash,
+            synthetic_workspace_root=repository_root,
+            normalized_at=datetime(2025, 5, 1, tzinfo=UTC),
         )

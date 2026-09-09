@@ -165,10 +165,29 @@ strategy/locked test 授权全部为 false。本项没有读取真实 ZIP、写�
 扩大回归 `35 passed`；Ruff 全仓通过；mypy 全仓 `159 source files` 通过；
 `git diff --check` 通过。最近一次完整 pytest 基线仍为第 27 项的 `851 passed, 1 skipped`。
 
+## 第 30 项：synthetic staged publication acceptance（完成）
+
+新增 synthetic-only 发布函数，先复核 contract/action/acceptance lineage、UTC 毫秒级
+`normalized_at`、行数及 normalized content hash，再在调用方测试工作区的独立 staging
+目录生成 Parquet。staged 文件通过既有 Parquet metadata/row-count/source-hash 复验和
+文件 SHA-256 复验后，才以不可变发布原语暴露最终路径；重复同内容复用，任何既有内容冲突
+均 Fail Closed 且 staging 自动清理。Windows 分区名沿用现有 normalization 约定，使用
+action SHA-256 的 16 位前缀，避免临时文件名越过传统路径长度上限。
+
+空边界分区只发布同分区路径下的 `.exclusion.json` acceptance，不生成 Parquet。函数显式
+拒绝目标落入本仓库 `data/normalized`，合成验收只写 pytest 临时目录；frozen namespace
+保持不存在/未修改。真实 ZIP、真实 derivative、下载、账户、交易、部署及 push 均未发生，
+所有研究和策略授权继续为 false。
+
+验证结果：冻结 CPython 3.12.13 下合并专项 `11 passed`，覆盖 stage/validate/publish、
+幂等恢复、冲突不覆盖、staging 清理、空分区 receipt-only 及仓库路径拒绝；Kline 与全部
+lifecycle 扩大回归 `39 passed`；Ruff 全仓通过；mypy 全仓 `159 source files` 通过；
+`git diff --check` 通过。最近一次完整 pytest 基线仍为 `851 passed, 1 skipped`。
+
 ## 下一项
 
-第 30 项只验收 synthetic output 的 staging、完整校验、原子发布、幂等恢复与冲突拒绝；
-输出仍必须限定在测试临时目录，不得读取真实 ZIP 或写入仓库 `data/normalized`。真实执行、
-ATR reset/history seed、历史规则和研究门禁继续保持关闭。
+第 31 项只实现 synthetic batch orchestration 与内容寻址 batch receipt：验证多 action 输出
+逐项对应、总行数守恒、失败不发布完成 receipt，并继续禁止真实 ZIP、仓库 normalized 写入、
+ATR reset/history seed、历史规则放行和研究执行。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。

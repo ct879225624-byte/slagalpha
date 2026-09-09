@@ -7,6 +7,7 @@ import re
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Literal, Self
 
 import pandas as pd
@@ -16,10 +17,16 @@ from slagalpha.data.archive import ArchiveSpec
 from slagalpha.data.klines import (
     RAW_COLUMNS,
     KlineArchiveError,
+    _normalized_content_hash,
     normalize_klines,
     read_archive_csv,
+    write_normalized_parquet,
 )
-from slagalpha.reporting.run_manifest import _publish_immutable, canonical_json_bytes
+from slagalpha.reporting.run_manifest import (
+    RunManifestError,
+    _publish_immutable,
+    canonical_json_bytes,
+)
 from slagalpha.research.lifecycle_executor_contract import (
     LifecycleExecutorInterfaceContract,
 )
@@ -364,6 +371,145 @@ def execute_synthetic_archive_lifecycle_derivative(
         source_archive_sha256=primary_archive_hash,
         evaluated_at=evaluated_at,
     )
+
+
+def publish_synthetic_lifecycle_derivative(
+    contract: LifecycleExecutorInterfaceContract,
+    action: LifecycleIntervalRemediationAction,
+    normalized: pd.DataFrame | None,
+    acceptance: LifecycleScopedDerivativeAcceptance,
+    *,
+    expected_contract_hash: str,
+    synthetic_workspace_root: Path,
+    normalized_at: datetime,
+) -> tuple[Path, str]:
+    """Stage, validate, and immutably publish one synthetic executor result."""
+
+    try:
+        contract = LifecycleExecutorInterfaceContract.model_validate(
+            contract.model_dump(mode="json")
+        )
+        action = LifecycleIntervalRemediationAction.model_validate(
+            action.model_dump(mode="json")
+        )
+        acceptance = LifecycleScopedDerivativeAcceptance.model_validate(
+            acceptance.model_dump(mode="json")
+        )
+    except ValueError as error:
+        raise LifecycleDerivativeAcceptanceError(
+            "synthetic publication inputs are invalid"
+        ) from error
+    if contract.contract_hash != expected_contract_hash:
+        raise LifecycleDerivativeAcceptanceError("unexpected executor contract")
+    if acceptance.remediation_plan_hash != contract.remediation_plan_hash:
+        raise LifecycleDerivativeAcceptanceError("acceptance does not reference the trusted plan")
+    if (
+        acceptance.symbol,
+        acceptance.settled_symbol,
+        acceptance.interval,
+        acceptance.evidence_period,
+        acceptance.source_archive_sha256,
+        acceptance.source_rows_sha256,
+        acceptance.retain_from_open_time,
+    ) != (
+        action.symbol,
+        action.settled_symbol,
+        action.interval,
+        action.evidence_period,
+        action.primary_archive_sha256,
+        action.primary_rows_sha256,
+        action.retain_from_open_time,
+    ):
+        raise LifecycleDerivativeAcceptanceError("acceptance does not match the action")
+    if normalized_at.tzinfo is None or normalized_at.utcoffset() != timedelta(0):
+        raise LifecycleDerivativeAcceptanceError("normalized_at must use UTC")
+    if normalized_at.microsecond % 1000:
+        raise LifecycleDerivativeAcceptanceError("normalized_at must use millisecond precision")
+
+    root = synthetic_workspace_root.resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    action_hash = hashlib.sha256(
+        canonical_json_bytes(action.model_dump(mode="json"))
+    ).hexdigest()
+    relative = contract.output_partition_template.format(
+        interval=action.interval,
+        symbol=action.symbol,
+        year=action.retain_from_open_time.year,
+        month=f"{action.retain_from_open_time.month:02d}",
+        action_hash=action_hash[:16],
+    )
+    destination = (root / contract.derivative_namespace / relative).resolve()
+    if not destination.is_relative_to(root):
+        raise LifecycleDerivativeAcceptanceError("synthetic output escapes workspace root")
+    repository_normalized = Path(__file__).resolve().parents[3] / "data" / "normalized"
+    if destination.is_relative_to(repository_normalized):
+        raise LifecycleDerivativeAcceptanceError(
+            "synthetic publication cannot target repository normalized data"
+        )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    if normalized is None:
+        if acceptance.status != "EXCLUDED_EMPTY_BOUNDARY_PARTITION":
+            raise LifecycleDerivativeAcceptanceError("missing accepted derivative frame")
+        destination = destination.with_suffix(".exclusion.json")
+        content = canonical_json_bytes(acceptance.model_dump(mode="json"))
+        if destination.is_symlink() or (
+            destination.exists() and destination.read_bytes() != content
+        ):
+            raise LifecycleDerivativeAcceptanceError(
+                "existing synthetic exclusion conflicts with acceptance"
+            )
+        try:
+            _publish_immutable(destination, content)
+        except RunManifestError as error:
+            raise LifecycleDerivativeAcceptanceError(
+                "synthetic exclusion publication conflict"
+            ) from error
+        return destination, hashlib.sha256(content).hexdigest()
+    if acceptance.status != "ACCEPTED":
+        raise LifecycleDerivativeAcceptanceError("empty exclusion cannot publish Parquet")
+    if len(normalized) != acceptance.derivative_row_count:
+        raise LifecycleDerivativeAcceptanceError("normalized row count disagrees with acceptance")
+    if _normalized_content_hash(normalized) != acceptance.derivative_content_hash:
+        raise LifecycleDerivativeAcceptanceError(
+            "normalized content hash disagrees with acceptance"
+        )
+
+    with TemporaryDirectory(prefix=".lifecycle-stage-", dir=root) as stage_dir:
+        staged = Path(stage_dir) / destination.name
+        staged_hash = write_normalized_parquet(
+            normalized,
+            staged,
+            normalized_at=normalized_at,
+            normalized_content_hash=acceptance.derivative_content_hash,
+            source_file_hash=acceptance.source_archive_sha256,
+        )
+        if write_normalized_parquet(
+            normalized,
+            staged,
+            normalized_at=normalized_at,
+            normalized_content_hash=acceptance.derivative_content_hash,
+            source_file_hash=acceptance.source_archive_sha256,
+        ) != staged_hash:
+            raise LifecycleDerivativeAcceptanceError("staged synthetic derivative changed")
+        staged_content = staged.read_bytes()
+        if hashlib.sha256(staged_content).hexdigest() != staged_hash:
+            raise LifecycleDerivativeAcceptanceError("staged synthetic derivative hash mismatch")
+        if destination.is_symlink() or (
+            destination.exists() and destination.read_bytes() != staged_content
+        ):
+            raise LifecycleDerivativeAcceptanceError(
+                "existing synthetic derivative conflicts with staged output"
+            )
+        try:
+            _publish_immutable(destination, staged_content)
+        except RunManifestError as error:
+            raise LifecycleDerivativeAcceptanceError(
+                "synthetic derivative publication conflict"
+            ) from error
+    if destination.read_bytes() != staged_content:
+        raise LifecycleDerivativeAcceptanceError("published synthetic derivative changed")
+    return destination, hashlib.sha256(staged_content).hexdigest()
 
 
 def write_lifecycle_scoped_derivative_acceptance(
