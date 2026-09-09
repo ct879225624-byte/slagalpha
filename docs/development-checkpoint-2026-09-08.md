@@ -223,11 +223,34 @@ ATR reset/history seed、历史规则、research、strategy、locked test 授权
 `strategy_executed=false`、`locked_test_consumed=false`，ATR reset/history seed 与历史规则
 放行均未授权。
 
+## 第 33 项：replacement normalization lineage（完成）
+
+新增 `lifecycle-replacement-normalization/0.1.0` 内容寻址清单，把冻结 normalization result、
+remediation plan 和真实 execution receipt 严格串联。overlay policy 固定为
+`DERIVATIVE_SHADOWS_FROZEN_SAME_PARTITION`，不复制 6,900 万行基线数据，也不修改旧 Parquet。
+结果 hash 为 `7565da18af89195250651ba2cf49f60ae4f8725ce9a83a2b010e540e5047911b`。
+
+- 原 73,313 个可用分区中遮蔽 8 个受污染日线分区，叠加 31 个 materialized derivative，
+  replacement 可用分区为 73,336；不可用 4 个分别是 AERGO 的 3 个原失败与
+  CTKUSDT/1d exclusion。
+- 原 27 个失败中，24 个已由 15m/1h/4h derivative 解决；AERGO 没有 verified identity
+  boundary，3 个失败原样保留。
+- replacement 行数按 `69,189,525 - 247 + 10,153 = 69,199,431` 守恒；清单不冒充已
+  materialize 的第二份全量视图。
+- writer 重复发布幂等、冲突拒绝；可信输入 hash、lineage、action coverage、分区数和行数均
+  Fail Closed。脚本按预期返回码 1，因为状态必须保持 `BLOCKED`。
+- frozen normalization、真实 derivative 和原始 ZIP 均未修改；研究、策略和 locked test
+  未运行。历史规则、1m、Funding、ATR/history seed 和 AERGO 仍阻断。
+
+验证结果：冻结 CPython 3.12.13 下第 33 项专项 `4 passed`；Kline 与全部 lifecycle 扩大
+回归 `48 passed`；全量 `873 passed, 1 skipped`，skip 为既有 Windows symlink 场景；
+Ruff 全仓通过；mypy 全仓 `141 source files` 通过；`git diff --check` 通过。清单脚本复跑
+得到相同 result hash，并按设计返回码 1。
+
 ## 下一项
 
-第 33 项只生成 replacement normalization lineage/acceptance：把原 normalization result 的
-27 个失败中，已修复的 24 个 15m/1h/4h action 与 8 个 1d 生命周期边界结果逐项绑定；
-AERGO 的 3 个失败必须继续保留，不能把 derivative receipt 直接冒充完整研究输入。历史规则、
-1m、Funding 和研究门禁仍独立阻断。
+第 34 项应让只读输入语义审计识别 replacement lineage，但仍要求所有独立研究输入门禁通过；
+它只能证明生命周期替代规则可消费，不能放行 AERGO、历史规则、1m、Funding 或 ATR/history
+seed，也不能开始参数研究。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。

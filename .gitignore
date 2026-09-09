@@ -46,6 +46,7 @@ dist/
 !/data/manifests/lifecycle_derivative_executor_contract/
 !/data/manifests/lifecycle_real_authorization/
 !/data/manifests/lifecycle_real_execution/
+!/data/manifests/lifecycle_replacement_normalization/
 !/data/manifests/normalization_batch/
 !/data/manifests/normalization_gap_audit/
 !/data/manifests/parameter_version/

@@ -1,6 +1,6 @@
 # Crypto Trading Copilot 实施计划
 
-状态：P0–P8、P9.1、P9.2a、P9.2b 输入门禁、P9.2c 生命周期边界 remediation plan、P9.2d–P9.2i lifecycle executor 设计与合成验收、P9.2j 已授权边界月 derivative materialization 已完成；真实研究仍阻断
+状态：P0–P8、P9.1、P9.2a、P9.2b 输入门禁、P9.2c 生命周期边界 remediation plan、P9.2d–P9.2i lifecycle executor 设计与合成验收、P9.2j 已授权边界月 derivative materialization、P9.2k replacement normalization lineage 已完成；真实研究仍阻断
 依据：`CRYPTO_AGENT_DEVELOPMENT_SPEC.md`  
 制定日期：2026-08-26
 
@@ -278,4 +278,7 @@ P0 完成并验收后，只启动 P1。之后每个阶段单独报告：
   多 action batch 只在全部 action 成功后发布内容寻址 completion receipt；失败不会出现
   完成标记。用户明确批准后，32 个真实边界月 action 已在独立 lifecycle namespace
   materialize 为 31 个 Parquet 和 1 个 exclusion receipt；frozen normalization 未修改，
-  研究授权仍关闭。见 `docs/p9-lifecycle-real-execution.md`。
+  replacement lineage 以 derivative 遮蔽同分区旧数据，保留 AERGO 3 个失败并明确排除
+  CTKUSDT/1d；未生成第二份全量数据集，研究授权仍关闭。见
+  `docs/p9-lifecycle-real-execution.md` 和
+  `docs/p9-lifecycle-replacement-normalization.md`。
