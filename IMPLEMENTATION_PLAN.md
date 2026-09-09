@@ -289,3 +289,7 @@ P0 完成并验收后，只启动 P1。之后每个阶段单独报告：
   180 根前缀。审计现会逐分区重验边界月 derivative 与所需的后续冻结月份，32/32 个已解析
   stream 均已证明具备连续前缀；AERGO 的 3 个未解析 lifecycle identity 仍使报告保持
   `BLOCKED`。该技术证明不授权 ATR reset、history seed、研究、策略或 locked test。
+- DEV 多周期 Candle 语义已按冻结 split 精确收窄：27 个 normalization failure 全部位于
+  DEV 结束日之后，且 gap audit 对 DEV 的 direct/lookback/recursive dependency 均为 0；因此
+  `CANDLE_MULTI_TIMEFRAME` 对 DEV 已验证。该结论不适用于 VALIDATION/LOCKED_TEST，replacement
+  的 AERGO/CTK 边界缺口仍保留，真实研究继续受历史规则、1m 与 Funding 三项门禁阻断。

@@ -146,7 +146,10 @@ def test_semantic_report_round_trip_and_tamper_rejection(tmp_path: Path) -> None
 
 
 def _real_gap_selections(
-    root: Path, *, overrides: dict[str, Any] | None = None,
+    root: Path,
+    *,
+    overrides: dict[str, Any] | None = None,
+    dev_dependency: bool = False,
 ) -> tuple[SensitivityPlan, DevParameterVersion, tuple[InputArtifactSelection, ...]]:
     manifests = Path("data/manifests")
     plan = SensitivityPlan.model_validate_json((manifests / "sensitivity_plan" /
@@ -167,9 +170,18 @@ def _real_gap_selections(
     selections = []
     for role, folder, digest in files:
         content = (manifests / folder / f"{digest}.json").read_bytes()
-        if role is InputArtifactRole.NORMALIZATION_GAP_AUDIT and overrides:
+        if role is InputArtifactRole.NORMALIZATION_GAP_AUDIT and (overrides or dev_dependency):
             payload = json.loads(content)
-            payload.update(overrides)
+            payload.update(overrides or {})
+            if dev_dependency:
+                dependency = payload["dependencies"][0]
+                dependency["recursive_history_overlap_dates"] = ["2024-01-01"]
+                payload["recursive_history_overlap_day_count"] += 1
+                payload["blockers"].append(
+                    "RECURSIVE_HISTORY_DEPENDENCY_UNRESOLVED:"
+                    + dependency["evidence"]["identity"]
+                )
+                payload["blockers"] = sorted(set(payload["blockers"]))
             del payload["report_hash"]
             payload["report_hash"] = hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
             content = canonical_json_bytes(payload)
@@ -182,7 +194,7 @@ def _real_gap_selections(
     return plan, parameter, tuple(selections)
 
 
-def test_bound_gap_diagnostics_add_recursive_blockers_without_relaxing_gate(tmp_path: Path) -> None:
+def test_bound_gap_diagnostics_clear_only_out_of_scope_dev_failures(tmp_path: Path) -> None:
     plan, parameter, selections = _real_gap_selections(tmp_path)
     content = inspect_dev_execution_inputs(
         project_dir=tmp_path, plan=plan, parameter=parameter, selections=selections,
@@ -190,10 +202,34 @@ def test_bound_gap_diagnostics_add_recursive_blockers_without_relaxing_gate(tmp_
     report = inspect_dev_execution_semantics(
         project_dir=tmp_path, plan=plan, parameter=parameter, content_report=content,
     )
-    assert sum(code.startswith("RUN_INPUT_GAP_AUDIT:") for code in report.blockers) == 18
-    assert "RUN_INPUT_SEMANTIC_INCOMPLETE_OR_MISMATCH_CANDLE_MULTI_TIMEFRAME" in report.blockers
+    assert report.schema_version == "dev-execution-semantics/0.3.0"
+    assert report.normalization_scope is not None
+    assert report.normalization_scope.failed_partition_count == 27
+    assert report.normalization_scope.in_scope_failure_count == 0
+    assert not any(code.startswith("RUN_INPUT_GAP_AUDIT:") for code in report.blockers)
+    assert "RUN_INPUT_SEMANTIC_INCOMPLETE_OR_MISMATCH_CANDLE_MULTI_TIMEFRAME" not in (
+        report.blockers
+    )
+    assert InputArtifactRole.CANDLE_MULTI_TIMEFRAME in report.validated_roles
     assert report.research_authorized is False
     assert InputArtifactRole.NORMALIZATION_GAP_AUDIT not in REQUIRED_INPUT_ROLES
+
+
+def test_dev_dependency_keeps_incomplete_normalization_blocked(tmp_path: Path) -> None:
+    plan, parameter, selections = _real_gap_selections(tmp_path, dev_dependency=True)
+    content = inspect_dev_execution_inputs(
+        project_dir=tmp_path, plan=plan, parameter=parameter, selections=selections,
+    )
+    report = inspect_dev_execution_semantics(
+        project_dir=tmp_path, plan=plan, parameter=parameter, content_report=content,
+    )
+    assert report.normalization_scope is None
+    assert report.schema_version == "dev-execution-semantics/0.1.0"
+    assert any(code.startswith("RUN_INPUT_GAP_AUDIT:") for code in report.blockers)
+    assert "RUN_INPUT_SEMANTIC_INCOMPLETE_OR_MISMATCH_CANDLE_MULTI_TIMEFRAME" in (
+        report.blockers
+    )
+    assert InputArtifactRole.CANDLE_MULTI_TIMEFRAME in report.deferred_roles
 
 
 @pytest.mark.parametrize("overrides", [

@@ -309,10 +309,38 @@ stream 全部为 `SUFFICIENT`、0 个已解析 stream blocked。报告仍为 `BL
 `20 passed`、全量 `884 passed, 1 skipped`；skip 为既有 Windows symlink 场景。Ruff 全仓、
 mypy `src scripts`（98 source files）与 `git diff --check` 均通过。
 
+## 第 37 项：DEV normalization 角色范围收窄（完成）
+
+AERGO 本地证据复核没有发现新的可信 identity 来源：2025-04 的主/SETTLED K 线只能证明价格
+断层形态，保存的 exchangeInfo、contract registry 与 identity registry 均没有 AERGO 的
+`effective_from`；因此不重复第 25 项审计，也不从行情反推身份边界。
+
+随后修正 DEV 语义门禁的范围错误。冻结 split 的 DEV 为 `2023-08-01` 至 `2025-01-30`，
+548 天、1,578,210 个预定扫描记录；27 个 normalization failure 最早为 `2025-03`。新增
+`DevNormalizationScopeReference`，只有 normalization、Universe、split 与 gap audit 全部内容
+绑定，27/27 失败均有可解释的原始 gap evidence，且所有 direct/lookback/recursive dependency
+日期都不在 DEV 时，才给出 `NO_DEV_SCAN_DEPENDENCY`。合成反例把一个 recursive dependency
+放入 DEV，门禁会恢复多周期 Candle blocker。
+
+真实语义报告升级为 `dev-execution-semantics/0.3.0`，hash 为
+`faacfca9fc1b6398f7b021a7448ea14f466eba24ef77d0f7684e752922673f54`。多周期 Candle 从
+deferred 转为 validated；全局 replacement lineage 仍保留 73,336/73,340 与 AERGO/CTK 边界
+状态，但这些 2025-03 之后的失败不再错误阻断 DEV。当前 DEV blocker 精确收敛为 3 项：
+
+- `NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS`
+- `RUN_INPUT_MISSING_CANDLE_ONE_MINUTE`
+- `RUN_INPUT_MISSING_FUNDING`
+
+报告仍为 `BLOCKED`，未运行研究、策略或 locked test。v0.1/v0.2 旧语义报告继续可解析且哈希
+兼容。冻结 CPython 3.12.13 下专项 execution semantics 与 lifecycle replacement 回归
+`26 passed`，全量 `885 passed, 1 skipped`；skip 为既有 Windows symlink 场景。Ruff 全仓、
+mypy `src scripts`（98 source files）与 `git diff --check` 均通过。
+
 ## 下一项
 
-实施计划没有定义 P10–P13；在 P9 的剩余独立输入门禁（历史规则、1m、Funding、AERGO identity）
-解除前，真实参数回测与 locked test 仍不得启动。下一步继续审计现有本地权威证据能否解析
-AERGO lifecycle identity；若仓库无足够证据，保留 blocker 并转向其他不依赖下载的 P9 门禁。
+实施计划没有定义 P10–P13；P9.2 DEV 当前只剩历史合约规则、1m 与 Funding 三项独立门禁。
+历史规则是最上游 blocker：649 个 contract rule 全部 `UNVERIFIED`，16,440 个 DEV member-day
+没有 1 个可用规则日。在规则证据解除前不能生成可信策略请求集合，因此也不能确定所需 1m 与
+Funding 的精确请求范围；真实参数回测与 locked test 继续禁止。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。

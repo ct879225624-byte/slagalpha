@@ -84,14 +84,38 @@ class LifecycleReplacementSemanticReference(BaseModel):
         return self
 
 
+class DevNormalizationScopeReference(BaseModel):
+    """Proof that every failed normalization partition is outside DEV dependencies."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    gap_audit_hash: str
+    failed_partition_count: int = Field(gt=0)
+    out_of_scope_failure_count: int = Field(gt=0)
+    in_scope_failure_count: Literal[0] = 0
+    status: Literal["NO_DEV_SCAN_DEPENDENCY"] = "NO_DEV_SCAN_DEPENDENCY"
+
+    @model_validator(mode="after")
+    def validate_reference(self) -> Self:
+        if len(self.gap_audit_hash) != 64 or any(
+            character not in "0123456789abcdef" for character in self.gap_audit_hash
+        ):
+            raise ValueError("normalization scope reference must use lowercase SHA-256")
+        if self.out_of_scope_failure_count != self.failed_partition_count:
+            raise ValueError("normalization scope failure counts do not reconcile")
+        return self
+
+
 class DevExecutionSemanticReport(BaseModel):
     """Parsed manifest readiness; never permission to run a replay."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["dev-execution-semantics/0.1.0", "dev-execution-semantics/0.2.0"] = (
-        "dev-execution-semantics/0.1.0"
-    )
+    schema_version: Literal[
+        "dev-execution-semantics/0.1.0",
+        "dev-execution-semantics/0.2.0",
+        "dev-execution-semantics/0.3.0",
+    ] = "dev-execution-semantics/0.1.0"
     dataset_role: Literal[DatasetRole.DEV] = DatasetRole.DEV
     content_report_hash: str
     validated_roles: tuple[InputArtifactRole, ...]
@@ -99,6 +123,7 @@ class DevExecutionSemanticReport(BaseModel):
     status: Literal["BLOCKED", "CHECKS_PASSED"]
     blockers: tuple[str, ...]
     replacement_lineage: LifecycleReplacementSemanticReference | None = None
+    normalization_scope: DevNormalizationScopeReference | None = None
     strategy_executed: Literal[False] = False
     locked_test_consumed: Literal[False] = False
     research_authorized: Literal[False] = False
@@ -128,12 +153,19 @@ class DevExecutionSemanticReport(BaseModel):
         if (self.status == "BLOCKED") != bool(self.blockers):
             raise ValueError("semantic status and blockers disagree")
         if self.schema_version == "dev-execution-semantics/0.1.0":
-            if self.replacement_lineage is not None:
-                raise ValueError("v0.1 semantic reports cannot contain replacement lineage")
-        elif self.replacement_lineage is None and (
-            "RUN_INPUT_SEMANTIC_INVALID_LIFECYCLE_REPLACEMENT" not in self.blockers
+            if self.replacement_lineage is not None or self.normalization_scope is not None:
+                raise ValueError("v0.1 semantic reports cannot contain later lineage")
+        elif self.schema_version == "dev-execution-semantics/0.2.0" and (
+            self.normalization_scope is not None
+            or (self.replacement_lineage is None and (
+                "RUN_INPUT_SEMANTIC_INVALID_LIFECYCLE_REPLACEMENT" not in self.blockers
+            ))
         ):
-            raise ValueError("v0.2 semantic reports must account for replacement lineage")
+            raise ValueError("v0.2 semantic reports must account only for replacement lineage")
+        elif self.schema_version == "dev-execution-semantics/0.3.0" and (
+            self.normalization_scope is None
+        ):
+            raise ValueError("v0.3 semantic reports require DEV normalization scope evidence")
         payload = self.model_dump(mode="json", exclude={"report_hash"}, exclude_none=True)
         if self.report_hash != hashlib.sha256(canonical_json_bytes(payload)).hexdigest():
             raise ValueError("semantic report content hash mismatch")
@@ -209,6 +241,73 @@ def _verify_lifecycle_replacement(
         verified_output_bytes=output_bytes,
         status=replacement.status,
         blockers=replacement.blockers,
+    )
+
+
+def _normalization_gap_matches(
+    *,
+    normalization: NormalizationBatchResult,
+    universe: UniverseBatchResult | None,
+    split: ResearchSplitManifest | None,
+    gap_audit: NormalizationGapAuditReport,
+) -> bool:
+    if universe is None or split is None:
+        return False
+    failure_identities = {item.identity for item in normalization.failures}
+    dependency_identities = {item.evidence.identity for item in gap_audit.dependencies}
+    expected_blockers = {
+        *(f"SELECTED_LOOKBACK_DEPENDS_ON_FAILED_FILE:{item.evidence.identity}"
+          for item in gap_audit.dependencies if item.lookback_overlap_dates),
+        *(f"RECURSIVE_HISTORY_DEPENDENCY_UNRESOLVED:{item.evidence.identity}"
+          for item in gap_audit.dependencies if item.recursive_history_overlap_dates),
+    }
+    return not (
+        gap_audit.normalization_result_hash != normalization.result_hash
+        or gap_audit.daily_snapshot_hash != universe.daily_snapshot_hash
+        or gap_audit.daily_snapshot_hash != split.daily_snapshot_hash
+        or gap_audit.snapshot_count != universe.expected_count
+        or gap_audit.failure_file_count != normalization.failed_count
+        or gap_audit.verified_gap_file_count != normalization.failed_count
+        or len(gap_audit.dependencies) != normalization.failed_count
+        or gap_audit.finite_lookback_bars != FINITE_LOOKBACK_BARS
+        or dependency_identities != failure_identities
+        or set(gap_audit.blockers) != expected_blockers
+    )
+
+
+def _dev_normalization_scope(
+    *,
+    normalization: NormalizationBatchResult,
+    universe: UniverseBatchResult | None,
+    split: ResearchSplitManifest | None,
+    gap_audit: NormalizationGapAuditReport,
+) -> DevNormalizationScopeReference | None:
+    if not _normalization_gap_matches(
+        normalization=normalization,
+        universe=universe,
+        split=split,
+        gap_audit=gap_audit,
+    ):
+        return None
+    assert split is not None
+    dev = next((segment for segment in split.segments if segment.role == DatasetRole.DEV), None)
+    if dev is None:
+        return None
+    dependency_dates = (
+        day
+        for item in gap_audit.dependencies
+        for day in (
+            *item.direct_overlap_dates,
+            *item.lookback_overlap_dates,
+            *item.recursive_history_overlap_dates,
+        )
+    )
+    if any(dev.start <= day < dev.end_exclusive for day in dependency_dates):
+        return None
+    return DevNormalizationScopeReference(
+        gap_audit_hash=gap_audit.report_hash,
+        failed_partition_count=normalization.failed_count,
+        out_of_scope_failure_count=normalization.failed_count,
     )
 
 
@@ -361,6 +460,29 @@ def inspect_dev_execution_semantics(
             blockers.append("RUN_INPUT_SEMANTIC_INCOMPLETE_OR_MISMATCH_UNIVERSE")
 
     normalization = parse(InputArtifactRole.CANDLE_MULTI_TIMEFRAME, NormalizationBatchResult)
+    gap_audit = parse(InputArtifactRole.NORMALIZATION_GAP_AUDIT, NormalizationGapAuditReport)
+    gap_matches = (
+        _normalization_gap_matches(
+            normalization=normalization,
+            universe=universe,
+            split=split,
+            gap_audit=gap_audit,
+        )
+        if normalization is not None and gap_audit is not None
+        else False
+    )
+    normalization_scope = (
+        _dev_normalization_scope(
+            normalization=normalization,
+            universe=universe,
+            split=split,
+            gap_audit=gap_audit,
+        )
+        if normalization is not None and gap_audit is not None
+        else None
+    )
+    if gap_audit is not None and not gap_matches:
+        blockers.append("RUN_INPUT_SEMANTIC_MISMATCH_NORMALIZATION_GAP_AUDIT")
     replacement_lineage: LifecycleReplacementSemanticReference | None = None
     if normalization is not None and replacement is not None:
         replacement_lineage = _verify_lifecycle_replacement(
@@ -370,11 +492,21 @@ def inspect_dev_execution_semantics(
         )
         if replacement_lineage is None:
             blockers.append("RUN_INPUT_SEMANTIC_INVALID_LIFECYCLE_REPLACEMENT")
+    if (
+        gap_audit is not None
+        and gap_matches
+        and normalization_scope is None
+        and replacement_lineage is None
+    ):
+        blockers.extend(f"RUN_INPUT_GAP_AUDIT:{code}" for code in gap_audit.blockers)
     if normalization is not None:
         normalization_matches = normalization.complete and (
             universe is None or normalization.dataset_content_hash == universe.dataset_content_hash
         )
-        if normalization_matches:
+        scoped_normalization_matches = normalization_scope is not None and (
+            universe is None or normalization.dataset_content_hash == universe.dataset_content_hash
+        )
+        if normalization_matches or scoped_normalization_matches:
             validated.add(InputArtifactRole.CANDLE_MULTI_TIMEFRAME)
         elif (
             replacement_lineage is not None
@@ -395,28 +527,6 @@ def inspect_dev_execution_semantics(
                 validated.add(InputArtifactRole.CANDLE_MULTI_TIMEFRAME)
         else:
             blockers.append("RUN_INPUT_SEMANTIC_INCOMPLETE_OR_MISMATCH_CANDLE_MULTI_TIMEFRAME")
-
-    gap_audit = parse(InputArtifactRole.NORMALIZATION_GAP_AUDIT, NormalizationGapAuditReport)
-    if gap_audit is not None:
-        gap_matches = (
-            normalization is not None
-            and universe is not None
-            and split is not None
-            and gap_audit.normalization_result_hash == normalization.result_hash
-            and gap_audit.daily_snapshot_hash == universe.daily_snapshot_hash
-            and gap_audit.daily_snapshot_hash == split.daily_snapshot_hash
-            and gap_audit.snapshot_count == universe.expected_count
-            and gap_audit.failure_file_count == normalization.failed_count
-            and gap_audit.finite_lookback_bars == FINITE_LOOKBACK_BARS
-            and {item.evidence.identity for item in gap_audit.dependencies}.issubset(
-                {item.identity for item in normalization.failures}
-            )
-        )
-        if not gap_matches:
-            blockers.append("RUN_INPUT_SEMANTIC_MISMATCH_NORMALIZATION_GAP_AUDIT")
-        elif replacement_lineage is None:
-            blockers.extend(f"RUN_INPUT_GAP_AUDIT:{code}" for code in gap_audit.blockers)
-        # A verified replacement supersedes old lifecycle-gap diagnostics but not its blockers.
 
     archive = parse(InputArtifactRole.ARCHIVE_MANIFEST, ArchiveBatchResult)
     if archive is not None:
@@ -483,9 +593,13 @@ def inspect_dev_execution_semantics(
     deferred_roles = tuple(role for role in REQUIRED_INPUT_ROLES if role not in validated)
     payload: dict[str, Any] = {
         "schema_version": (
-            "dev-execution-semantics/0.2.0"
-            if replacement is not None
-            else "dev-execution-semantics/0.1.0"
+            "dev-execution-semantics/0.3.0"
+            if normalization_scope is not None
+            else (
+                "dev-execution-semantics/0.2.0"
+                if replacement is not None
+                else "dev-execution-semantics/0.1.0"
+            )
         ),
         "dataset_role": DatasetRole.DEV.value,
         "content_report_hash": content_report.report_hash,
@@ -495,6 +609,11 @@ def inspect_dev_execution_semantics(
         "blockers": sorted(set(blockers)),
         "replacement_lineage": (
             replacement_lineage.model_dump(mode="json") if replacement_lineage is not None else None
+        ),
+        "normalization_scope": (
+            normalization_scope.model_dump(mode="json")
+            if normalization_scope is not None
+            else None
         ),
         "strategy_executed": False,
         "locked_test_consumed": False,
