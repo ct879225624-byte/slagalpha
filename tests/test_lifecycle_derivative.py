@@ -32,6 +32,14 @@ from slagalpha.research.lifecycle_executor_contract import (
     LifecycleExecutorInterfaceContract,
     build_lifecycle_executor_interface_contract,
 )
+from slagalpha.research.lifecycle_real_execution import (
+    LifecycleRealExecutionAuthorization,
+    LifecycleRealExecutionError,
+    LifecycleRealExecutionReceipt,
+    build_real_execution_authorization,
+    execute_real_lifecycle_derivatives,
+    write_real_execution_authorization,
+)
 from slagalpha.research.lifecycle_remediation import (
     LifecycleNormalizationRemediationPlan,
     build_lifecycle_normalization_remediation_plan,
@@ -575,3 +583,72 @@ def test_synthetic_batch_rejects_incomplete_archive_set(tmp_path: Path) -> None:
         )
 
     assert not synthetic_root.exists()
+
+
+def test_explicitly_authorized_real_boundary_month_execution_is_idempotent(
+    tmp_path: Path,
+) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    authorized_at = datetime(2026, 9, 9, 9, 13, 35, 349000, tzinfo=UTC)
+    authorization = build_real_execution_authorization(
+        contract,
+        plan,
+        expected_contract_hash=contract.contract_hash,
+        expected_plan_hash=plan.plan_hash,
+        authorized_at=authorized_at,
+        approval="USER_APPROVED_REAL_LOCAL_LIFECYCLE_NORMALIZATION",
+    )
+    workspace = tmp_path / "workspace"
+    path = write_real_execution_authorization(authorization, workspace / "data")
+    assert LifecycleRealExecutionAuthorization.model_validate_json(path.read_bytes()) == (
+        authorization
+    )
+
+    receipt, receipt_path = execute_real_lifecycle_derivatives(
+        authorization,
+        contract,
+        plan,
+        raw_klines_dir=tmp_path / "klines",
+        workspace_root=workspace,
+        normalized_at=authorized_at,
+    )
+    repeated, repeated_path = execute_real_lifecycle_derivatives(
+        authorization,
+        contract,
+        plan,
+        raw_klines_dir=tmp_path / "klines",
+        workspace_root=workspace,
+        normalized_at=authorized_at,
+    )
+
+    assert repeated == receipt
+    assert repeated_path == receipt_path
+    assert receipt.action_count == 4
+    assert receipt.materialized_action_count == 4
+    assert receipt.real_output_materialized is True
+    assert receipt.research_authorized is False
+    assert LifecycleRealExecutionReceipt.model_validate_json(receipt_path.read_bytes()) == receipt
+
+
+def test_real_execution_requires_durable_authorization(tmp_path: Path) -> None:
+    plan, _ = _plan_and_source(tmp_path)
+    contract = _executor_contract(plan)
+    authorization = build_real_execution_authorization(
+        contract,
+        plan,
+        expected_contract_hash=contract.contract_hash,
+        expected_plan_hash=plan.plan_hash,
+        authorized_at=datetime(2026, 9, 9, 9, 13, 35, 349000, tzinfo=UTC),
+        approval="USER_APPROVED_REAL_LOCAL_LIFECYCLE_NORMALIZATION",
+    )
+
+    with pytest.raises(LifecycleRealExecutionError, match="authorization is missing"):
+        execute_real_lifecycle_derivatives(
+            authorization,
+            contract,
+            plan,
+            raw_klines_dir=tmp_path / "klines",
+            workspace_root=tmp_path / "workspace",
+            normalized_at=authorization.authorized_at,
+        )

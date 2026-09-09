@@ -204,11 +204,30 @@ ATR reset/history seed、历史规则、research、strategy、locked test 授权
 `42 passed`；Ruff 全仓通过；mypy 全仓 `159 source files` 通过；`git diff --check` 通过。
 最近一次完整 pytest 基线仍为 `851 passed, 1 skipped`。
 
-## 下一项 / 当前授权边界
+## 第 32 项：已授权真实 boundary-month derivative execution（完成）
 
-下一步若进入真实 lifecycle derivative execution，必须先获得明确批准；当前 contract 的
-`REAL_DERIVATIVE_EXECUTION_NOT_AUTHORIZED` 仍生效。本轮不得自行读取 32 个真实主/SETTLED
-ZIP 或写入仓库 `data/normalized/lifecycle_scoped/v0.1.0`。即使未来完成该执行，历史规则
-证据、1m 与 Funding 等独立 P9 输入门禁仍需各自解除，不能直接启动研究。
+用户在当前任务中明确批准读取本地真实主/SETTLED ZIP，并写入独立
+`data/normalized/lifecycle_scoped/v0.1.0`；授权不包含下载、研究、locked test、交易、部署
+或 push。新增内容寻址 authorization
+`2ca444ef55f3b4854f6caa32a074ff6c8b1afc54753c5166141bfeaf0521e42c`，固定 32 个 action、
+可信 contract/plan、输入行数和全部保留门禁；执行脚本还要求显式命令行确认开关。
+
+真实执行逐项重验 64 个本地 ZIP 的 archive/rows hash、SETTLED evidence 行数、exact cutoff
+和 plan membership。最终生成 31 个 Parquet 与 1 个 CTKUSDT/1d exclusion receipt，共
+1,107,438 bytes；行数为 `30,877 = 20,724 excluded + 10,153 retained`。完成 receipt 为
+`3d87c7db4e0a4287b12e6009cbc3e3139c2d65a0f7a8f1abcb7e87071038b86e`。
+
+同一命令复跑得到相同 authorization/receipt hash；逐项输出文件 SHA-256、Parquet 总行数
+和 receipt 全部复验通过，staging 已清理。授权后 frozen `data/normalized/klines` 修改文件数
+为 0，原 normalization result 保持 `c86dd5...955d2`。`research_authorized=false`、
+`strategy_executed=false`、`locked_test_consumed=false`，ATR reset/history seed 与历史规则
+放行均未授权。
+
+## 下一项
+
+第 33 项只生成 replacement normalization lineage/acceptance：把原 normalization result 的
+27 个失败中，已修复的 24 个 15m/1h/4h action 与 8 个 1d 生命周期边界结果逐项绑定；
+AERGO 的 3 个失败必须继续保留，不能把 derivative receipt 直接冒充完整研究输入。历史规则、
+1m、Funding 和研究门禁仍独立阻断。
 
 整体保持 P0–P8 完成、P9 研究仍阻断（约 25%，工程阶段 9/14 约 64%）。
