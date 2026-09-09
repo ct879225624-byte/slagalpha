@@ -102,3 +102,15 @@ Git 忽略的数据目录，不把第三方存档身份冒充 Binance 官方签�
 来源：[Binance Exchange Information](https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data)、
 [Binance 2023 minimum-notional adjustment](https://www.binance.com/en/support/announcement/detail/e4384cba297a4bd2a154be644d5d76f9)、
 [Internet Archive replay](https://web.archive.org/web/20231102093209id_/https://fapi.binance.com/fapi/v1/exchangeInfo)。
+
+## 2026-09-09 Common Crawl 补充核验
+
+对覆盖 DEV 的 Common Crawl 公开索引（`CC-MAIN-2023-40`、`2023-50`、
+`2024-10` 至 `2024-51`、`2025-05`）逐一查询同一 Binance 官方 URL。全部返回
+`No Captures found`；首次遇到的 `2024-26`、`2024-33`、`2025-08`、`2025-13` 网关超时已
+使用 60 秒上限定向重试，均同样返回无捕获。`2025-43` 虽有记录，但状态是 HTTP 451，且在
+DEV 结束后，因此不构成历史规则材料。
+
+这只是对第二个第三方公开爬虫索引的可用性核验，不是证明互联网不存在其他材料。它没有
+产生可下载的 HTTP 200 原始快照，未改变第 38 项的 Internet Archive 审计、注册表、
+eligible member-day 或任何研究授权。

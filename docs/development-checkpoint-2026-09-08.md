@@ -379,3 +379,11 @@ symlink 场景；Ruff 全仓与 mypy `src scripts`（100 source files）通过�
 tick、step、min/max quantity、minimum notional 及精确生效区间的可审计数据源。没有该材料
 时，不能生成可信 P4–P6 accepted plan，也不能确定 1m/Funding 的精确请求集。P9 参数研究、
 VALIDATION 与 LOCKED_TEST 均继续禁止；实施计划仍没有正式 P10–P13 定义。
+
+### 第 38 项补充：Common Crawl 公开索引核验（完成）
+
+第 38 项提交后，补完了中断的第二公开存档索引核验。覆盖 DEV 的 Common Crawl 索引均返回
+无 `exchangeInfo` 捕获；四个初次网关超时的索引重试后同样为无捕获。唯一找到的记录是
+DEV 后的 2025 HTTP 451，并非 JSON 快照。没有新增文件下载或规则材料，因此不改变
+`01b28cea...` 历史源审计、0 个 eligible member-day、注册表或研究授权；详细来源边界见
+`docs/p9-historical-rule-evidence-gap.md`。
