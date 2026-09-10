@@ -69,8 +69,18 @@ def _core_fixture(
 
 def test_valid_core_manifests_are_cross_bound_but_missing_data_stays_blocked(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     plan, parameter, selections = _core_fixture(tmp_path)
+    environment = next(
+        selection
+        for selection in selections
+        if selection.role is InputArtifactRole.ENVIRONMENT_LOCK
+    )
+    monkeypatch.setattr(
+        "slagalpha.research.execution_semantics.inspect_environment_lock",
+        lambda _: environment.expected_sha256,
+    )
     content = inspect_dev_execution_inputs(
         project_dir=tmp_path, plan=plan, parameter=parameter, selections=selections
     )
