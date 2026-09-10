@@ -10,6 +10,9 @@
   Universe 与 Candle 哈希集合、归档 manifest 哈希、成本版本、bootstrap seed、命令参数、
   环境锁哈希，以及 P9 split/敏感度计划哈希。
 - `DevRunManifest` 增加 UTC 毫秒精度起止时间、规范 JSON 结果哈希和全记录 `run_id`。
+- `dev-run-manifest/0.2.0` 强制保存 `tick_size_impact`：明确区分 `VERIFIED_ONLY` 与
+  `DEV_APPROXIMATE`，并记录近似规则使用次数、已观察价格数、结果 warning 数、最大取整
+  影响（bps）及 warning codes。近似模式缺少 `APPROXIMATE_HISTORICAL_TICK_SIZE` 会拒绝。
 - `DEV_RESEARCH` 必须有完整 Git object ID 且 `dirty_worktree=false`；无提交或 dirty
   的开发记录只能显式标记 `NON_REPRODUCIBLE_DEV_RUN`，不得用于晋级。
 - 仅接受 DEV；VALIDATION/LOCKED_TEST 均拒绝，没有布尔开关放行。
@@ -73,15 +76,15 @@ artifacts/runs/<run_id>/
 - 验证冻结 split/audit/plan 自身哈希、相互引用和所选文件名，检查策略规则文档未改变。
 - 用只读 Git 命令读取项目 root、HEAD 与 dirty 状态；禁用可选索引锁，不 add/commit。
   无法读取时状态为未知并阻断，不能默认为干净工作区。
-- 保留 DEV 历史规则输入阻断，不调用策略重放，不访问账户或凭证。
+- 保留 DEV 规则来源与 warning，不调用策略重放，不访问账户或凭证。
 - 将报告写入 `data/manifests/dev_preflight/<hash>.json`，不创建完成运行记录。
 
 报告的 `CHECKS_PASSED` 只表示这些前置检查通过，始终 `research_authorized=false`。
 参数版本工件及独立计划绑定校验已实现；另有选择具体候选的文件内容哈希门禁，见
 `docs/p9-dev-execution-inputs.md`。当前有限前检不替代该门禁。正式执行器集成、各 manifest
-语义与交叉引用门禁也已实现，见 `docs/p9-dev-execution-semantics.md`；它确认多周期输入
-不完整。排除表和本地依赖 wheel 工件已补齐并通过独立核验；实际事件时刻的历史规则、
-1m/Funding schema 与数据仍需后续验证，不能拿任一准备报告启动锁定测试。
+语义与交叉引用门禁也已实现，见 `docs/p9-dev-execution-semantics.md`。排除表和本地依赖
+wheel 工件已补齐并通过独立核验；DEV 可显式使用 approximate 历史规则，但 1m/Funding
+真实请求集合与数据仍需后续验证，不能拿任一准备报告启动锁定测试。
 
 退出码：0 = 有限前检通过，1 = 正常发现阻断，2 = 环境不匹配或前检输入/读写错误。
 

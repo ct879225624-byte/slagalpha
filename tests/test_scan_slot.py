@@ -12,7 +12,12 @@ import pytest
 
 from slagalpha.data.archive import archive_path
 from slagalpha.data.klines import INTERVAL_MILLISECONDS
-from slagalpha.domain.universe import ContractRegistry, ContractRegistryEntry, RegistryVerification
+from slagalpha.domain.universe import (
+    ContractRegistry,
+    ContractRegistryEntry,
+    EvidenceConfidence,
+    RegistryVerification,
+)
 from slagalpha.reporting.run_manifest import canonical_json_bytes
 from slagalpha.research.candle_history import ScanCandleHistory, last_closed_boundary
 from slagalpha.research.candle_inputs import CandleInputError
@@ -138,12 +143,14 @@ def test_invalid_bundle_and_context_fail_before_computation(
         at = histories[0].confirmation_close
         entries: tuple[ContractRegistryEntry, ...] = (rule.model_copy(update={
             "verification_status": RegistryVerification.UNVERIFIED,
+            "confidence": EvidenceConfidence.LOW,
         }),) if change in ("unverified", "blocked_plan") else (
             rule.model_copy(update={"effective_to": at}),
         )
         if change == "intraday_unverified":
             entries += (rule.model_copy(update={
                 "effective_from": at, "verification_status": RegistryVerification.UNVERIFIED,
+                "confidence": EvidenceConfidence.LOW,
             }),)
         context["registry"] = ContractRegistry(registry_version=registry.registry_version,
                                                entries=entries)
@@ -159,7 +166,7 @@ def test_invalid_bundle_and_context_fail_before_computation(
             row_count=int((last_closed_boundary(at, item.interval) - item.history_start)
                           / timedelta(milliseconds=INTERVAL_MILLISECONDS[item.interval])),
         ) for item in histories)
-    pattern = "VERIFIED active historical rule" if change.startswith("intraday") else None
+    pattern = "usable DEV historical rule" if change.startswith("intraday") else None
     with pytest.raises(ValueError, match=pattern):
         compute_source_bound_scan_slot(**context)
 

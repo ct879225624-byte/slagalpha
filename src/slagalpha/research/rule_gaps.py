@@ -134,7 +134,9 @@ def build_dev_rule_gap_report(
         day = snapshot.selected_at.date()
         if not dev.start <= day < dev.end_exclusive:
             continue
-        for entry in evaluate_universe_rule_gate(snapshot, registry).entries:
+        for entry in evaluate_universe_rule_gate(
+            snapshot, registry, allow_approximate_rules=True,
+        ).entries:
             if entry.eligible:
                 continue
             prior = windows[entry.symbol]

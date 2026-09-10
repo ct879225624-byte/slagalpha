@@ -10,7 +10,13 @@ from typing import Annotated, Any, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from slagalpha.backtest.replay import TradeReplayRequest
-from slagalpha.domain.universe import ContractRegistry, RegistryVerification, UniverseSnapshot
+from slagalpha.domain.universe import (
+    APPROXIMATE_TICK_SIZE_WARNING,
+    ContractRegistry,
+    EvidenceConfidence,
+    RegistryVerification,
+    UniverseSnapshot,
+)
 from slagalpha.reporting.run_manifest import _publish_immutable, canonical_json_bytes
 from slagalpha.research.parameters import DevParameterVersion, require_parameter_plan_binding
 from slagalpha.research.sensitivity import SensitivityPlan
@@ -58,6 +64,9 @@ class DevReplayDataRequest(BaseModel):
     universe_content_hash: Sha256
     registry_content_hash: Sha256
     rule_content_hash: Sha256
+    rule_verification_status: RegistryVerification
+    rule_confidence: EvidenceConfidence
+    rule_warning_codes: tuple[str, ...]
     request: TradeReplayRequest
     start: datetime
     end_exclusive: datetime
@@ -70,6 +79,13 @@ class DevReplayDataRequest(BaseModel):
     def validate_request(self) -> Self:
         if self.request.armed.symbol == "UNKNOWN":
             raise ValueError("data request must identify an exact symbol")
+        expected_warnings = (
+            (APPROXIMATE_TICK_SIZE_WARNING,)
+            if self.rule_verification_status is RegistryVerification.UNVERIFIED
+            else ()
+        )
+        if self.rule_warning_codes != expected_warnings:
+            raise ValueError("data request rule warnings do not match verification status")
         if (self.start, self.end_exclusive) != replay_data_bounds(self.request):
             raise ValueError("data request must retain its complete bounded replay window")
         minutes = int((self.end_exclusive - self.start).total_seconds() / 60)
@@ -121,9 +137,9 @@ def build_dev_replay_data_request(
     rules = tuple(item for item in registry.entries if item.symbol == symbol
                   and item.effective_from <= start
                   and (item.effective_to is None or end <= item.effective_to))
-    if len(rules) != 1 or rules[0].verification_status is not RegistryVerification.VERIFIED:
+    if len(rules) != 1 or not rules[0].eligible_for_dev_research:
         raise ReplayDataInputError(
-            "one VERIFIED historical rule must cover the complete replay window"
+            "one usable DEV historical rule must cover the complete replay window"
         )
     rule = rules[0]
     if rule.tick_size != request.tick_size:
@@ -141,6 +157,13 @@ def build_dev_replay_data_request(
         "universe_content_hash": _hash(universe.model_dump(mode="json")),
         "registry_content_hash": _hash(registry.model_dump(mode="json")),
         "rule_content_hash": _hash(rule.model_dump(mode="json")),
+        "rule_verification_status": rule.verification_status.value,
+        "rule_confidence": rule.confidence.value,
+        "rule_warning_codes": (
+            [APPROXIMATE_TICK_SIZE_WARNING]
+            if rule.verification_status is RegistryVerification.UNVERIFIED
+            else []
+        ),
         "request": request.model_dump(mode="json"), "start": start.isoformat(),
         "end_exclusive": end.isoformat(),
         "expected_candle_count": int((end - start).total_seconds() / 60),

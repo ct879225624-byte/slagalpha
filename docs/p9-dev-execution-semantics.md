@@ -34,26 +34,26 @@
 .venv\Scripts\python.exe scripts\p9_dev_execution_semantics.py
 ```
 
-报告哈希：
+冻结 CPython 3.12.13 环境下的更新报告哈希：
 
-`095a2f2e7d33e2e5247a5656a919c9fec15b38daa4e86e320331b0dd4f9f20fd`
+`aed10a5b8a045caaa4588447292aa209b29477f8c331d86224a0ca98ca1b999b`
 
-11 类通过解析与交叉引用：Archive、合约规则注册表、依赖 wheel 工件、环境锁、显式空排除表、参数版本、
+12 类通过解析与交叉引用：Archive、多周期 Candle、合约规则注册表、依赖 wheel 工件、环境锁、显式空排除表、参数版本、
 输入审计、split、敏感度计划、策略规则和 Universe。
 
-3 类仍 deferred：
+2 类仍 deferred：
 
-- 多周期 Candle：已提供的 normalization batch 为 `complete=false`，27 个文件规范化失败。
 - 1m Candle：没有真实 accepted 请求集合及其完整聚合输入 manifest。
 - Funding：没有真实 accepted 请求集合及其完整聚合输入 manifest。
 
-报告还保留历史规则 0 个合格成员日的既有阻断。状态为 `BLOCKED`，固定
+DEV 历史规则 blocker 已解除，16,440 个 member-days 以明确 warning 使用 approximate
+tick-size；VALIDATION/LOCKED_TEST 未放宽。状态仍为 `BLOCKED`，固定
 `research_authorized=false`、`strategy_executed=false`、`locked_test_consumed=false`。
 这不是策略失败，也不改变 P9 1/4 的完成口径。
 
-当前附加诊断中有 18 个失败文件的递归历史依赖未解决（全时期范围），见
-`docs/p9-normalization-gap-audit.md`。这是保守数据阻断，不能把有限窗口无交集解释为 ATR
-历史已经完整，也不能当作 DEV 交易结果。
+当前附加诊断中仍有 18 个失败文件的递归历史依赖未解决（全时期范围），见
+`docs/p9-normalization-gap-audit.md`。它不再预先阻断全部 DEV；实际扫描读取受影响区间时
+仍失败关闭。不能把有限窗口无交集解释为 ATR 历史已经完整，也不能当作 DEV 交易结果。
 
 2026-09-05 在冻结 CPython 3.12.13 环境和干净提交 `b0a3e35` 后复跑，报告哈希及上述
 11 类通过、3 类 deferred、18 个递归阻断均保持不变。说明近期扫描来源接线没有改变

@@ -413,3 +413,20 @@ metadata 查询或完整变更保证。按批准计划，单区间 pilot、
 原始 BTCUSDT/ETHUSDT 样例。资格与既有历史来源专项 `17 passed`；最终默认与冻结全量均为
 `902 passed, 1 skipped`，Ruff 全仓、冻结 mypy `173 source files`、CLI help、依赖 wheel
 哈希和报告幂等复跑全部通过。详细报告见 `docs/p9-paid-rule-source-qualification.md`。
+
+## 第 40 项：DEV research-grade 历史规则 fallback（完成）
+
+项目定位调整为高质量个人量化策略研究系统。保留原 `VERIFIED` 机制，但 DEV 允许来源与
+SHA-256 完整、confidence 为 `MEDIUM/HIGH` 的 `UNVERIFIED` 规则作为 approximate tick-size；
+VALIDATION 和 LOCKED_TEST 继续严格要求 VERIFIED。规则没有晋级或覆盖。
+
+新输入审计 `74e9a892...` 显示 DEV 16,440 / 16,440 member-days 可用并带
+`APPROXIMATE_HISTORICAL_TICK_SIZE` warning；VALIDATION/LOCKED_TEST 仍为 BLOCKED。新敏感度
+计划 `688113f3...` 无 DEV 上游 blocker，DEV scan plan `02c709fa...` 已生成 548 日、
+1,578,210 个扫描义务。执行内容/语义报告为 `cd60bc0c...` / `aed10a5b...`，当前只剩
+request-scoped 1m Candle 与 Funding 两项 blocker。
+
+每个 approximate P6 证据记录 tick、entry/stop/tp1/tp2 的实际取整偏移、最大 bps 影响及
+结果可能变化 warning。`dev-run-manifest/0.2.0` 强制声明 `VERIFIED_ONLY` 或
+`DEV_APPROXIMATE`，近似模式缺少 warning 直接拒绝。未运行策略、未消费 VALIDATION 或
+LOCKED_TEST，未访问账户、凭证或付费数据。

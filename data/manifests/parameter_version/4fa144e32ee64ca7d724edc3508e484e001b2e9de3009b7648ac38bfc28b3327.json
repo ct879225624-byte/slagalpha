@@ -1,0 +1,24 @@
+{
+  "candidate": {
+    "candidate_hash": "bd7578e397a1a0d72c52a4d0244fa9dd2d73792f07b8181d886fefe695060d38",
+    "changed_parameter": "stop_atr_multiplier",
+    "parameters": {
+      "compression_threshold": "0.75",
+      "entry_ttl_bars": 4,
+      "max_holding_bars": 32,
+      "pivot_window": [
+        2,
+        2
+      ],
+      "stop_atr_multiplier": "0.10"
+    }
+  },
+  "content_hash": "4fa144e32ee64ca7d724edc3508e484e001b2e9de3009b7648ac38bfc28b3327",
+  "dataset_role": "DEV",
+  "locked_test_consumed": false,
+  "schema_version": "dev-parameter-version/0.1.0",
+  "sensitivity_plan_hash": "688113f39f756bd0585bb44831393eb4a4b1e013a68b750fc8817031ef10fca9",
+  "strategy_executed": false,
+  "strategy_rules_sha256": "8275b2243149835a287c4f1ebf40ae6328d81e64dabaa8c3dad8bffc19054b93",
+  "strategy_version": "ma-trend-pullback/0.1.0"
+}

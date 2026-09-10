@@ -1,0 +1,18 @@
+{
+  "blocked_member_day_count": 0,
+  "contract_registry_version": "registry-draft-f2a9370598caed227566b0c0903b215cd491aea45588d56e1dc3aea1b4e45ea0",
+  "coverage_scope": "EFFECTIVE_FROM_GATE_ONLY",
+  "dataset_role": "DEV",
+  "eligible_member_day_count": 16440,
+  "end_exclusive": "2025-01-30",
+  "input_audit_hash": "74e9a89210257478ba1b7ef89fd67ff3d6d12d87f6c44b6a4113369f30aab4f3",
+  "locked_test_consumed": false,
+  "member_day_count": 16440,
+  "registry_content_hash": "fd3c88cc7ce5c57dfd5ca9816ecf3107bffd7a4522a03f4937caa8ac6c991bf6",
+  "report_hash": "0b2e7f5258a9bfd5a0b9820460939dba91ba180533e5571b692ae8b3db832025",
+  "schema_version": "dev-rule-gaps/0.1.0",
+  "split_hash": "b262a24e59f69d7887e8bd5805eb9f11c4fcaef6611c8cd7480d5a2ca89027ca",
+  "start": "2023-08-01",
+  "strategy_executed": false,
+  "targets": []
+}

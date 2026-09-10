@@ -1,0 +1,171 @@
+{
+  "blockers": [],
+  "candidates": [
+    {
+      "candidate_hash": "e7af960eec91b8e8b8abf5484f3ef98aab73a90660121714746c3b24408d49c5",
+      "changed_parameter": "BASELINE",
+      "parameters": {
+        "compression_threshold": "0.75",
+        "entry_ttl_bars": 4,
+        "max_holding_bars": 32,
+        "pivot_window": [
+          2,
+          2
+        ],
+        "stop_atr_multiplier": "0.15"
+      }
+    },
+    {
+      "candidate_hash": "d889a882a5f551931d741752b28b65e1779cc3d247729abff249a221d6b976c4",
+      "changed_parameter": "pivot_window",
+      "parameters": {
+        "compression_threshold": "0.75",
+        "entry_ttl_bars": 4,
+        "max_holding_bars": 32,
+        "pivot_window": [
+          3,
+          3
+        ],
+        "stop_atr_multiplier": "0.15"
+      }
+    },
+    {
+      "candidate_hash": "def218e7a145e94ae8c08f2a601f337e1f53f871e7bda96339514af9f8c3a706",
+      "changed_parameter": "compression_threshold",
+      "parameters": {
+        "compression_threshold": "0.50",
+        "entry_ttl_bars": 4,
+        "max_holding_bars": 32,
+        "pivot_window": [
+          2,
+          2
+        ],
+        "stop_atr_multiplier": "0.15"
+      }
+    },
+    {
+      "candidate_hash": "15ca63f9a27f254d6cc0117b586e58399d500893ccd263ac6729cc09752f064f",
+      "changed_parameter": "compression_threshold",
+      "parameters": {
+        "compression_threshold": "1.00",
+        "entry_ttl_bars": 4,
+        "max_holding_bars": 32,
+        "pivot_window": [
+          2,
+          2
+        ],
+        "stop_atr_multiplier": "0.15"
+      }
+    },
+    {
+      "candidate_hash": "bd7578e397a1a0d72c52a4d0244fa9dd2d73792f07b8181d886fefe695060d38",
+      "changed_parameter": "stop_atr_multiplier",
+      "parameters": {
+        "compression_threshold": "0.75",
+        "entry_ttl_bars": 4,
+        "max_holding_bars": 32,
+        "pivot_window": [
+          2,
+          2
+        ],
+        "stop_atr_multiplier": "0.10"
+      }
+    },
+    {
+      "candidate_hash": "2411b911264e674876c3bc19f22b6937c2d71033e7eb1ab2769c69c5daadc77a",
+      "changed_parameter": "stop_atr_multiplier",
+      "parameters": {
+        "compression_threshold": "0.75",
+        "entry_ttl_bars": 4,
+        "max_holding_bars": 32,
+        "pivot_window": [
+          2,
+          2
+        ],
+        "stop_atr_multiplier": "0.20"
+      }
+    },
+    {
+      "candidate_hash": "0b515c4c262e0c2f23551a6db12e7fe56b7ca992e4c939e57deb6c690a474950",
+      "changed_parameter": "entry_ttl_bars",
+      "parameters": {
+        "compression_threshold": "0.75",
+        "entry_ttl_bars": 2,
+        "max_holding_bars": 32,
+        "pivot_window": [
+          2,
+          2
+        ],
+        "stop_atr_multiplier": "0.15"
+      }
+    },
+    {
+      "candidate_hash": "3ba25f08b6ba9c05b96a2f6d54ca8b73aeda685b823f34aafd4e912f526e7631",
+      "changed_parameter": "entry_ttl_bars",
+      "parameters": {
+        "compression_threshold": "0.75",
+        "entry_ttl_bars": 6,
+        "max_holding_bars": 32,
+        "pivot_window": [
+          2,
+          2
+        ],
+        "stop_atr_multiplier": "0.15"
+      }
+    },
+    {
+      "candidate_hash": "fbc968495d574e8a71fdccf600a4059df0cd42a401e843bc5f6cd83683f833f4",
+      "changed_parameter": "max_holding_bars",
+      "parameters": {
+        "compression_threshold": "0.75",
+        "entry_ttl_bars": 4,
+        "max_holding_bars": 16,
+        "pivot_window": [
+          2,
+          2
+        ],
+        "stop_atr_multiplier": "0.15"
+      }
+    },
+    {
+      "candidate_hash": "65ffe100de22e6150828c607e97ae5272739d02a4cf9bd2477cb924e7f3fa6f3",
+      "changed_parameter": "max_holding_bars",
+      "parameters": {
+        "compression_threshold": "0.75",
+        "entry_ttl_bars": 4,
+        "max_holding_bars": 48,
+        "pivot_window": [
+          2,
+          2
+        ],
+        "stop_atr_multiplier": "0.15"
+      }
+    }
+  ],
+  "contract_registry_version": "registry-draft-f2a9370598caed227566b0c0903b215cd491aea45588d56e1dc3aea1b4e45ea0",
+  "cost_rates": {
+    "BASELINE": {
+      "fee_rate": "0.0006",
+      "slippage_rate": "0.0002"
+    },
+    "STRESS": {
+      "fee_rate": "0.0006",
+      "slippage_rate": "0.0005"
+    },
+    "ZERO": {
+      "fee_rate": "0",
+      "slippage_rate": "0"
+    }
+  },
+  "dataset_role": "DEV",
+  "dev_input_readiness": "READY",
+  "input_audit_hash": "74e9a89210257478ba1b7ef89fd67ff3d6d12d87f6c44b6a4113369f30aab4f3",
+  "locked_test_consumed": false,
+  "plan_hash": "688113f39f756bd0585bb44831393eb4a4b1e013a68b750fc8817031ef10fca9",
+  "planned_evaluation_count": 30,
+  "schema_version": "sensitivity-plan/0.1.0",
+  "split_hash": "b262a24e59f69d7887e8bd5805eb9f11c4fcaef6611c8cd7480d5a2ca89027ca",
+  "strategy_executed": false,
+  "strategy_rules_sha256": "8275b2243149835a287c4f1ebf40ae6328d81e64dabaa8c3dad8bffc19054b93",
+  "strategy_version": "ma-trend-pullback/0.1.0"
+}

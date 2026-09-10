@@ -19,6 +19,7 @@ from slagalpha.backtest.replay import ArmedReplayRequest, TradeReplayRequest
 from slagalpha.backtest.runner import ReplayCase
 from slagalpha.data.universe import build_daily_universe
 from slagalpha.domain.universe import (
+    APPROXIMATE_TICK_SIZE_WARNING,
     ContractRegistry,
     ContractRegistryEntry,
     EvidenceConfidence,
@@ -151,6 +152,42 @@ def test_unverified_rule_blocks_before_invalid_replay_data_is_read() -> None:
     assert result.cases[0].reason_codes == (
         HistoricalReplayBlockReason.CONTRACT_RULE_UNVERIFIED,
     )
+
+
+def test_dev_gate_allows_medium_confidence_rule_with_warning() -> None:
+    rule = _rule(RegistryVerification.UNVERIFIED).model_copy(
+        update={"confidence": EvidenceConfidence.MEDIUM}
+    )
+    registry = ContractRegistry(registry_version="draft", entries=(rule,))
+    universe = _universe(ContractRegistry(
+        registry_version="identity-equivalent",
+        entries=(_rule(RegistryVerification.VERIFIED),),
+    ))
+
+    report = evaluate_universe_rule_gate(
+        universe, registry, allow_approximate_rules=True,
+    )
+    assert report.eligible_count == 1
+    assert report.entries[0].rule_verification_status is RegistryVerification.UNVERIFIED
+    assert report.entries[0].warning_codes == (APPROXIMATE_TICK_SIZE_WARNING,)
+
+
+def test_dev_fallback_still_blocks_low_confidence_rule() -> None:
+    rule = _rule(RegistryVerification.UNVERIFIED).model_copy(
+        update={"confidence": EvidenceConfidence.LOW}
+    )
+    registry = ContractRegistry(registry_version="draft", entries=(rule,))
+    universe = _universe(ContractRegistry(
+        registry_version="identity-equivalent",
+        entries=(_rule(RegistryVerification.VERIFIED),),
+    ))
+
+    report = evaluate_universe_rule_gate(
+        universe, registry, allow_approximate_rules=True,
+    )
+
+    assert report.eligible_count == 0
+    assert report.entries[0].warning_codes == ()
 
 
 def test_verified_matching_rule_executes_p7_and_hash_is_repeatable() -> None:

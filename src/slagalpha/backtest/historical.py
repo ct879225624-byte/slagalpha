@@ -21,8 +21,10 @@ from slagalpha.backtest.runner import (
     replay_cases,
 )
 from slagalpha.domain.universe import (
+    APPROXIMATE_TICK_SIZE_WARNING,
     ContractRegistry,
     ContractRegistryEntry,
+    EvidenceConfidence,
     RegistryVerification,
     UniverseSnapshot,
 )
@@ -59,6 +61,9 @@ class HistoricalRuleGateEntry(BaseModel):
     eligible: bool
     reason_codes: tuple[HistoricalReplayBlockReason, ...]
     rule_source_ref: str | None
+    rule_verification_status: RegistryVerification | None = None
+    rule_confidence: EvidenceConfidence | None = None
+    warning_codes: tuple[str, ...] = ()
 
     @model_validator(mode="after")
     def validate_gate(self) -> Self:
@@ -69,6 +74,13 @@ class HistoricalRuleGateEntry(BaseModel):
             raise ValueError("eligible rule gate must have no reasons and vice versa")
         if self.eligible and self.rule_source_ref is None:
             raise ValueError("eligible rule gate requires a source reference")
+        if self.warning_codes != tuple(sorted(set(self.warning_codes))):
+            raise ValueError("historical rule warnings must be unique and canonical")
+        if self.warning_codes and (
+            not self.eligible
+            or self.rule_verification_status is not RegistryVerification.UNVERIFIED
+        ):
+            raise ValueError("historical rule warnings require an eligible unverified rule")
         return self
 
 
@@ -199,6 +211,7 @@ def _gate_reasons(
     symbol: str,
     at: datetime,
     tick_size: object | None = None,
+    allow_approximate_rules: bool = False,
 ) -> tuple[tuple[HistoricalReplayBlockReason, ...], ContractRegistryEntry | None]:
     reasons: list[HistoricalReplayBlockReason] = []
     if not (universe.effective_from <= at < universe.effective_to):
@@ -208,7 +221,10 @@ def _gate_reasons(
     rule = _active_rule(registry, symbol, at)
     if rule is None:
         reasons.append(HistoricalReplayBlockReason.CONTRACT_RULE_MISSING)
-    elif rule.verification_status is not RegistryVerification.VERIFIED:
+    elif not (
+        rule.eligible_for_locked_research
+        or (allow_approximate_rules and rule.eligible_for_dev_research)
+    ):
         reasons.append(HistoricalReplayBlockReason.CONTRACT_RULE_UNVERIFIED)
     elif tick_size is not None and tick_size != rule.tick_size:
         reasons.append(HistoricalReplayBlockReason.TICK_SIZE_MISMATCH)
@@ -218,6 +234,8 @@ def _gate_reasons(
 def evaluate_universe_rule_gate(
     universe: UniverseSnapshot,
     registry: ContractRegistry,
+    *,
+    allow_approximate_rules: bool = False,
 ) -> HistoricalRuleGateReport:
     """Evaluate every Universe member before any P7 request or 1m data is needed."""
 
@@ -228,6 +246,14 @@ def evaluate_universe_rule_gate(
             registry=registry,
             symbol=member.symbol,
             at=universe.effective_from,
+            allow_approximate_rules=allow_approximate_rules,
+        )
+        warnings = (
+            (APPROXIMATE_TICK_SIZE_WARNING,)
+            if rule is not None
+            and not reasons
+            and rule.verification_status is RegistryVerification.UNVERIFIED
+            else ()
         )
         entries.append(
             HistoricalRuleGateEntry(
@@ -235,6 +261,11 @@ def evaluate_universe_rule_gate(
                 eligible=not reasons,
                 reason_codes=reasons,
                 rule_source_ref=None if rule is None else rule.source_ref,
+                rule_verification_status=(
+                    None if rule is None else rule.verification_status
+                ),
+                rule_confidence=None if rule is None else rule.confidence,
+                warning_codes=warnings,
             )
         )
     reason_counts = dict(

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, cast
 
@@ -15,6 +16,7 @@ from slagalpha.reporting.run_manifest import (
     DevRunInputs,
     DevRunManifest,
     RunManifestError,
+    TickSizeRunImpact,
     build_dev_run_manifest,
     read_dev_run,
     write_dev_run,
@@ -23,6 +25,14 @@ from test_summary import canonical
 
 START = datetime(2024, 2, 1, tzinfo=UTC)
 END = START + timedelta(seconds=1)
+VERIFIED_TICK_IMPACT = TickSizeRunImpact(
+    mode="VERIFIED_ONLY",
+    approximate_rule_use_count=0,
+    observed_price_count=0,
+    outcome_warning_count=0,
+    max_adjustment_bps=None,
+    warning_codes=(),
+)
 
 
 def inputs(**updates: Any) -> DevRunInputs:
@@ -55,7 +65,9 @@ def result() -> dict[str, Any]:
 
 def manifest(payload: dict[str, Any] | None = None) -> DevRunManifest:
     return build_dev_run_manifest(
-        inputs(), started_at=START, finished_at=END, result=result() if payload is None else payload
+        inputs(), started_at=START, finished_at=END,
+        result=result() if payload is None else payload,
+        tick_size_impact=VERIFIED_TICK_IMPACT,
     )
 
 
@@ -92,7 +104,10 @@ def test_incomplete_or_nonreproducible_formal_inputs_fail_closed(updates: dict[s
 
 def test_missing_commit_is_allowed_only_with_explicit_nonreproducible_dev_label() -> None:
     draft = inputs(run_kind="NON_REPRODUCIBLE_DEV_RUN", code_commit=None, dirty_worktree=True)
-    artifact = build_dev_run_manifest(draft, started_at=START, finished_at=END, result=result())
+    artifact = build_dev_run_manifest(
+        draft, started_at=START, finished_at=END, result=result(),
+        tick_size_impact=VERIFIED_TICK_IMPACT,
+    )
     assert artifact.run_kind == "NON_REPRODUCIBLE_DEV_RUN"
     assert artifact.code_commit is None
     assert artifact.dirty_worktree is True
@@ -105,16 +120,21 @@ def test_missing_commit_is_allowed_only_with_explicit_nonreproducible_dev_label(
 ])
 def test_invalid_run_times_are_rejected(start: datetime, finish: datetime) -> None:
     with pytest.raises(ValueError):
-        build_dev_run_manifest(inputs(), started_at=start, finished_at=finish, result=result())
+        build_dev_run_manifest(
+            inputs(), started_at=start, finished_at=finish, result=result(),
+            tick_size_impact=VERIFIED_TICK_IMPACT,
+        )
 
 
 def test_input_or_result_change_changes_run_identity_but_audit_time_not_result_hash() -> None:
     original = manifest()
     changed_code = build_dev_run_manifest(
-        inputs(code_commit="b" * 40), started_at=START, finished_at=END, result=result()
+        inputs(code_commit="b" * 40), started_at=START, finished_at=END, result=result(),
+        tick_size_impact=VERIFIED_TICK_IMPACT,
     )
     changed_time = build_dev_run_manifest(
-        inputs(), started_at=START, finished_at=END + timedelta(seconds=1), result=result()
+        inputs(), started_at=START, finished_at=END + timedelta(seconds=1), result=result(),
+        tick_size_impact=VERIFIED_TICK_IMPACT,
     )
     changed_result = manifest({**result(), "test_marker": "different"})
     assert len({r.run_id for r in (original, changed_code, changed_time, changed_result)}) == 4
@@ -183,4 +203,42 @@ def test_nonfinite_result_cannot_be_saved(number: float) -> None:
 @pytest.mark.parametrize("payload", [[], "not an object", None])
 def test_nonobject_result_cannot_create_an_unreadable_run(payload: Any) -> None:
     with pytest.raises(RunManifestError, match="JSON object"):
-        build_dev_run_manifest(inputs(), started_at=START, finished_at=END, result=payload)
+        build_dev_run_manifest(
+            inputs(), started_at=START, finished_at=END, result=payload,
+            tick_size_impact=VERIFIED_TICK_IMPACT,
+        )
+
+
+def test_approximate_tick_run_is_explicit_and_missing_warning_is_rejected() -> None:
+    impact = TickSizeRunImpact(
+        mode="DEV_APPROXIMATE",
+        approximate_rule_use_count=3,
+        observed_price_count=8,
+        outcome_warning_count=2,
+        max_adjustment_bps=Decimal("0.4"),
+        warning_codes=("APPROXIMATE_HISTORICAL_TICK_SIZE",),
+    )
+    artifact = build_dev_run_manifest(
+        inputs(), started_at=START, finished_at=END, result=result(),
+        tick_size_impact=impact,
+    )
+    assert artifact.tick_size_impact == impact
+    assert artifact.schema_version == "dev-run-manifest/0.2.0"
+    with pytest.raises(ValueError, match="must disclose"):
+        TickSizeRunImpact(
+            mode="DEV_APPROXIMATE",
+            approximate_rule_use_count=1,
+            observed_price_count=0,
+            outcome_warning_count=0,
+            max_adjustment_bps=None,
+            warning_codes=(),
+        )
+    with pytest.raises(ValueError, match="must report"):
+        TickSizeRunImpact(
+            mode="DEV_APPROXIMATE",
+            approximate_rule_use_count=0,
+            observed_price_count=0,
+            outcome_warning_count=0,
+            max_adjustment_bps=None,
+            warning_codes=("APPROXIMATE_HISTORICAL_TICK_SIZE",),
+        )

@@ -12,7 +12,7 @@ import pytest
 from slagalpha.backtest.analytics import apply_funding
 from slagalpha.backtest.costs import CostScenario, replay_with_costs
 from slagalpha.backtest.replay import TradeExitReason
-from slagalpha.domain.universe import ContractRegistry, RegistryVerification
+from slagalpha.domain.universe import ContractRegistry, EvidenceConfidence, RegistryVerification
 from slagalpha.research.replay_inputs import (
     DevReplayDataRequest,
     ReplayDataInputError,
@@ -82,9 +82,10 @@ def test_unverified_upstream_rules_block_before_any_data_file_read(tmp_path: Pat
     context, request, one_minute, funding = _fixture(tmp_path)
     rule = context["registry"].entries[0].model_copy(update={
         "verification_status": RegistryVerification.UNVERIFIED,
+        "confidence": EvidenceConfidence.LOW,
     })
     context["registry"] = ContractRegistry(registry_version="synthetic-rules", entries=(rule,))
-    with pytest.raises(ReplayDataInputError, match="VERIFIED historical rule"):
+    with pytest.raises(ReplayDataInputError, match="usable DEV historical rule"):
         load_bound_replay_inputs(
             project_dir=tmp_path / "nonexistent", request=request,
             one_minute=one_minute, funding=funding, **context,

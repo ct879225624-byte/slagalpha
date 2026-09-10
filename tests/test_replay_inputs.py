@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from slagalpha.domain.universe import ContractRegistry, RegistryVerification
+from slagalpha.domain.universe import ContractRegistry, EvidenceConfidence, RegistryVerification
 from slagalpha.research.parameters import build_dev_parameter_version
 from slagalpha.research.replay_inputs import (
     DevReplayDataRequest,
@@ -86,7 +86,10 @@ def test_entire_request_must_remain_inside_dev(at: datetime) -> None:
 
 
 @pytest.mark.parametrize("changes", [
-    {"verification_status": RegistryVerification.UNVERIFIED},
+    {
+        "verification_status": RegistryVerification.UNVERIFIED,
+        "confidence": EvidenceConfidence.LOW,
+    },
     {"effective_to": datetime(2024, 1, 2, 0, 30, tzinfo=UTC)},
     {"tick_size": Decimal("0.01")},
     {"inferred_delisted_at": datetime(2024, 1, 2, 1, tzinfo=UTC)},

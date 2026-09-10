@@ -2,7 +2,7 @@
 
 SlagAlpha is a deterministic research project for the personal Binance USDⓈ-M Crypto Trading Copilot described in `CRYPTO_AGENT_DEVELOPMENT_SPEC.md`.
 
-Current scope: **P0–P8, P9.1 input audit, and P9.2a default sensitivity planning completed**. Real DEV research is blocked until verified historical tick/step intervals exist. No strategy study or locked test has been executed. Realtime scanning and account connectivity have not started.
+Current scope: **P0–P8 and the P9 DEV research inputs/plans are prepared**. DEV may use traceable medium-confidence rules as an explicitly disclosed tick-size approximation; VALIDATION and LOCKED_TEST remain strict. The remaining DEV replay inputs are request-scoped 1m Candle and Funding data. No strategy study or locked test has been executed. Realtime scanning and account connectivity have not started.
 
 ## Requirements
 
@@ -71,8 +71,9 @@ The frozen P0 rules and test scenarios are under `docs/`.
 
 The first command freezes and audits the 548/274/274-day global split. The second saves
 10 default-centered, single-parameter candidates with three cost scenarios each. Both are
-planning/audit commands; they do not consume the locked test. The real DEV gate currently
-reports `NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS`.
+planning/audit commands; they do not consume the locked test. DEV has 16,440 usable
+member-days under the disclosed approximate tick-size fallback. VALIDATION and LOCKED_TEST
+still require verified rules.
 
 The preflight command checks the frozen inputs, read-only Git state and the exact local
 environment recorded in `requirements.lock`. Exit 1 means expected research blockers;

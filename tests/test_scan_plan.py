@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from slagalpha.domain.universe import ContractRegistry, RegistryVerification
+from slagalpha.domain.universe import ContractRegistry, EvidenceConfidence, RegistryVerification
 from slagalpha.research.parameters import build_dev_parameter_version
 from slagalpha.research.replay_inputs import ReplayDataInputError
 from slagalpha.research.scan_plan import (
@@ -39,7 +39,9 @@ def _scan_context(*, ready: bool = True) -> dict[str, Any]:
     registry = ContractRegistry(
         registry_version="synthetic-rules",
         entries=(_rule(RegistryVerification.VERIFIED if ready
-                       else RegistryVerification.UNVERIFIED),),
+                       else RegistryVerification.UNVERIFIED).model_copy(update={
+            "confidence": EvidenceConfidence.HIGH if ready else EvidenceConfidence.LOW,
+        }),),
     )
     audit = audit_research_inputs(split=split, snapshots=snapshots, registry=registry)
     plan = build_default_sensitivity_plan(

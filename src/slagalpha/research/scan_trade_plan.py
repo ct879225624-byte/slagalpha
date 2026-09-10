@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from slagalpha.domain.universe import (
+    APPROXIMATE_TICK_SIZE_WARNING,
     ContractRegistry,
     ContractRegistryEntry,
+    EvidenceConfidence,
     RegistryVerification,
     UniverseSnapshot,
 )
@@ -31,18 +34,46 @@ from slagalpha.strategy.plans import (
     EntryStopEvaluation,
     EntryStopRequest,
     TakeProfitEvaluation,
+    TargetSource,
     build_entry_stop,
     build_take_profit,
 )
 
 
+class ApproximateTickSizeImpact(BaseModel):
+    """Observed price-grid adjustment when an unverified tick is used in DEV."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+
+    tick_size: Decimal
+    price_adjustments: dict[str, Decimal]
+    max_adjustment_bps: Decimal | None
+    outcome_warning: bool
+
+    @model_validator(mode="after")
+    def validate_impact(self) -> Self:
+        if self.tick_size <= 0:
+            raise ValueError("approximate tick size must be positive")
+        if self.price_adjustments != dict(sorted(self.price_adjustments.items())):
+            raise ValueError("tick-size price adjustments must be canonical")
+        if any(value < 0 for value in self.price_adjustments.values()):
+            raise ValueError("tick-size price adjustments cannot be negative")
+        if (self.max_adjustment_bps is None) != (not self.price_adjustments):
+            raise ValueError("tick-size maximum adjustment must match observed prices")
+        return self
+
+
 class ScanTradePlanEvidence(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["scan-trade-plan-evidence/0.1.0"] = "scan-trade-plan-evidence/0.1.0"
+    schema_version: Literal["scan-trade-plan-evidence/0.2.0"] = "scan-trade-plan-evidence/0.2.0"
     trigger_evidence: ScanTriggerEvidence
     registry_content_hash: Sha256
     rule_content_hash: Sha256
+    rule_verification_status: RegistryVerification
+    rule_confidence: EvidenceConfidence
+    rule_warning_codes: tuple[str, ...]
+    approximate_tick_impact: ApproximateTickSizeImpact | None
     universe_content_hash: Sha256
     status: Literal["SKIPPED_TRIGGER", "NOT_READY", "REJECTED_ENTRY_STOP",
                     "REJECTED_TAKE_PROFIT", "ACCEPTED_PLAN"]
@@ -59,6 +90,16 @@ class ScanTradePlanEvidence(BaseModel):
         history = self.trigger_evidence.setup_evidence.features[0].history
         if self.universe_content_hash != history.universe_content_hash:
             raise ValueError("Trade Plan Universe must match its original scan history")
+        expected_approximate = (
+            self.rule_verification_status is RegistryVerification.UNVERIFIED
+        )
+        if expected_approximate != (self.approximate_tick_impact is not None):
+            raise ValueError("approximate tick impact must match rule verification status")
+        expected_warnings = (
+            (APPROXIMATE_TICK_SIZE_WARNING,) if expected_approximate else ()
+        )
+        if self.rule_warning_codes != expected_warnings:
+            raise ValueError("rule warnings must match approximate tick usage")
         if self.trigger_evidence.status == "NOT_READY":
             expected = "NOT_READY"
         elif decision is None or not decision.eligible_for_plan:
@@ -105,12 +146,71 @@ def require_active_scan_rule(
     matches = tuple(rule for rule in registry.entries if rule.symbol == symbol
                     and rule.effective_from <= at
                     and (rule.effective_to is None or at < rule.effective_to))
-    if (len(matches) != 1 or matches[0].verification_status is not RegistryVerification.VERIFIED
+    if (len(matches) != 1 or not matches[0].eligible_for_dev_research
         or matches[0].status != "TRADING" or matches[0].derived_first_candle_at > at
         or (matches[0].onboard_date is not None and matches[0].onboard_date > at)
         or (matches[0].inferred_delisted_at is not None and at >= matches[0].inferred_delisted_at)):
-        raise CandleInputError("one VERIFIED active historical rule is required before P6")
+        raise CandleInputError("one usable DEV historical rule is required before P6")
     return matches[0]
+
+
+def _approximate_tick_impact(
+    rule: ContractRegistryEntry,
+    entry_stop: EntryStopEvaluation | None,
+    take_profit: TakeProfitEvaluation | None,
+) -> ApproximateTickSizeImpact | None:
+    if rule.verification_status is RegistryVerification.VERIFIED:
+        return None
+    prices: dict[str, tuple[Decimal, Decimal]] = {}
+    if entry_stop is not None:
+        for name, raw, rounded in (
+            ("entry", entry_stop.raw_entry, entry_stop.entry_price),
+            ("stop", entry_stop.raw_stop, entry_stop.stop_price),
+        ):
+            if raw is not None and rounded is not None:
+                prices[name] = (raw, rounded)
+    if take_profit is not None and take_profit.accepted and entry_stop is not None:
+        entry = entry_stop.entry_price
+        risk = entry_stop.risk_per_unit
+        if entry is not None and risk is not None:
+            for name, price, source, zone_id, multiplier in (
+                ("tp1", take_profit.tp1, take_profit.tp1_source, take_profit.tp1_zone_id, 1),
+                ("tp2", take_profit.tp2, take_profit.tp2_source, take_profit.tp2_zone_id, 2),
+            ):
+                if price is None or source is None:
+                    continue
+                if source is TargetSource.ATR_EXTENSION:
+                    distance = max(
+                        Decimal(multiplier) * risk,
+                        Decimal(multiplier) * entry_stop.request.atr_at_confirmation,
+                    )
+                    raw = (
+                        entry + distance
+                        if entry_stop.request.direction.value == "LONG"
+                        else entry - distance
+                    )
+                else:
+                    candidate = next(
+                        item for item in take_profit.candidates
+                        if item.source is source and item.zone_id == zone_id
+                    )
+                    raw = candidate.raw_price
+                prices[name] = (raw, price)
+    adjustments = dict(sorted(
+        (name, abs(rounded - raw)) for name, (raw, rounded) in prices.items()
+    ))
+    reference = entry_stop.entry_price if entry_stop is not None else None
+    maximum = max(adjustments.values()) if adjustments else None
+    return ApproximateTickSizeImpact(
+        tick_size=rule.tick_size,
+        price_adjustments=adjustments,
+        max_adjustment_bps=(
+            maximum / reference * Decimal("10000")
+            if maximum is not None and reference is not None and reference > 0
+            else None
+        ),
+        outcome_warning=entry_stop is not None,
+    )
 
 
 def compute_scan_trade_plan(
@@ -177,9 +277,23 @@ def compute_scan_trade_plan(
                 )
                 status = "ACCEPTED_PLAN"
     payload = {
-        "schema_version": "scan-trade-plan-evidence/0.1.0",
+        "schema_version": "scan-trade-plan-evidence/0.2.0",
         "trigger_evidence": trigger_evidence.model_dump(mode="json"),
         "registry_content_hash": model_hash(registry), "rule_content_hash": model_hash(rule),
+        "rule_verification_status": rule.verification_status.value,
+        "rule_confidence": rule.confidence.value,
+        "rule_warning_codes": (
+            [APPROXIMATE_TICK_SIZE_WARNING]
+            if rule.verification_status is RegistryVerification.UNVERIFIED
+            else []
+        ),
+        "approximate_tick_impact": (
+            impact.model_dump(mode="json")
+            if (
+                impact := _approximate_tick_impact(rule, entry_stop, take_profit)
+            ) is not None
+            else None
+        ),
         "universe_content_hash": model_hash(universe), "status": status,
         "entry_stop": entry_stop.model_dump(mode="json") if entry_stop is not None else None,
         "take_profit": take_profit.model_dump(mode="json") if take_profit is not None else None,

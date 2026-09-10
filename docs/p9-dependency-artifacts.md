@@ -55,6 +55,7 @@ pwsh -NoProfile -File scripts\p9_restore_frozen_environment.ps1
 ## 研究门禁影响
 
 依赖工件类别已通过语义检查，内容缺失类别从 3 减为 2（1m、Funding）。
-历史规则、完整多周期数据和递归历史依赖阻断全部保留；不授权策略执行。
+历史规则在 DEV 改为显式 approximate fallback；完整多周期数据和递归历史依赖仍由实际
+扫描按受影响区间失败关闭。该依赖工件本身不授权策略执行。
 整体保持 9/14（约 64%），P9 1/4。新增 12 个 wheel 合成测试及 2 个门禁重验测试，
 全量 385 通过、1 个 Windows 符号链接权限测试跳过；Ruff、mypy 105 文件通过。

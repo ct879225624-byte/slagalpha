@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 
 from slagalpha.data.archive import archive_path
-from slagalpha.domain.universe import ContractRegistry, RegistryVerification
+from slagalpha.domain.universe import ContractRegistry, EvidenceConfidence, RegistryVerification
 from slagalpha.research.candle_inputs import CandleInputError
 from slagalpha.research.scan_records import (
     build_source_bound_scan_record,
@@ -96,8 +96,9 @@ def test_rule_regression_is_not_converted_into_no_signal(tmp_path: Path) -> None
     context["registry"] = ContractRegistry(registry_version=registry.registry_version, entries=(
         registry.entries[0].model_copy(update={
             "verification_status": RegistryVerification.UNVERIFIED,
+            "confidence": EvidenceConfidence.LOW,
         }),
     ))
     context["project_dir"] = tmp_path / "missing"
-    with pytest.raises(CandleInputError, match="VERIFIED"):
+    with pytest.raises(CandleInputError, match="usable DEV"):
         build_source_bound_scan_record(**context)

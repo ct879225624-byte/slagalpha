@@ -1,7 +1,7 @@
 # P9 研究与冻结契约
 
-状态：P9.1 与 P9.2a 已完成；P9.2b 真实执行阻断  
-版本：0.1.0；日期：2026-08-31
+状态：P9.1 与 P9.2a 已完成；P9.2b DEV 规则门禁已解除，等待按请求补齐 1m/Funding
+版本：0.2.0；日期：2026-09-10
 
 ## 阶段与边界
 
@@ -41,11 +41,13 @@ symbol 单独切分；成熟期不会移动边界。
 ## 当前真实输入审计
 
 1,096 个快照完整，三个区间的成员日分别为 16,440 / 8,220 / 8,220。
-32,880 个成员日全部命中 `CONTRACT_RULE_UNVERIFIED`，可执行成员日为 0，三个 role
-均为 `BLOCKED`。没有执行任何参数回测或锁定测试。
+DEV 的 16,440 个成员日可使用 `MEDIUM` confidence、来源与哈希完整的未验证规则，全部
+记录 `APPROXIMATE_HISTORICAL_TICK_SIZE` warning；这些规则没有被改成 `VERIFIED`。
+VALIDATION 与 LOCKED_TEST 的 8,220 / 8,220 个成员日仍严格阻断。没有执行参数回测或
+锁定测试。
 
 - split hash：`b262a24e59f69d7887e8bd5805eb9f11c4fcaef6611c8cd7480d5a2ca89027ca`
-- audit hash：`d58f1cc2adcad91ebbc33bc3864e1f78388b2c9c8f6adb83f1b88f5b3d99e864`
+- audit hash：`74e9a89210257478ba1b7ef89fd67ff3d6d12d87f6c44b6a4113369f30aab4f3`
 - 重现命令：`.venv\Scripts\python.exe scripts\p9_research_input_audit.py`
 
 该审计是工程输入检查，不是可用于晋级的策略回测报告。
@@ -65,12 +67,11 @@ symbol 单独切分；成熟期不会移动边界。
 - `require_dev_execution_inputs` 只检查 DEV 前置输入，不是实际 replay 执行器，
   也不替代 RunManifest、1m/Funding 完整性或锁定测试的一次性授权。
 - 计划不等于参数冻结，`strategy_executed=false`、`locked_test_consumed=false`。
-- plan hash：`c41e2771a8ca526e4c8ffa09a863b078e300fc7332b9090461e11e1c1f2b5ff9`
+- plan hash：`688113f39f756bd0585bb44831393eb4a4b1e013a68b750fc8817031ef10fca9`
 - 重现命令：`.venv\Scripts\python.exe scripts\p9_sensitivity_plan.py`
 
-真实 DEV 仍因 `NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS` 阻断，不能启动
-P9.2b 或越过本阶段执行验证集/锁定集。外部证据调查见
-`docs/p9-historical-rule-evidence-gap.md`。
+DEV 历史规则 blocker 已解除，可以启动 P4–P6 扫描。规则取证与供应商资格审计保留为
+可选质量提升，不再是个人 DEV 研究硬门槛；VALIDATION/LOCKED_TEST 没有放宽。
 
 ## P9.2b 输入准备补充
 
@@ -78,20 +79,23 @@ P9.2b 或越过本阶段执行验证集/锁定集。外部证据调查见
 `docs/p9-rule-evidence-intake.md`。清单按受阻成员日排序，未使用策略收益；验收器只
 检查已提交材料，最高状态为 READY_FOR_REVIEW，仍为 UNVERIFIED，不能直接进入研究。
 
-248 个 DEV 合约、16,440 个成员日继续受阻。当前快照外推 DEV 的真实反例被拒绝，
-原注册表与 P9.1/P9.2a 哈希未变。此项属于输入准备，不改变 P9 完成 1/4 的口径。
+该 intake 现作为可选的规则质量提升入口保留。248 个 DEV 合约、16,440 个成员日已可在
+不改变原注册表、不把规则伪装为 `VERIFIED` 的前提下使用 research-grade fallback；每次
+使用都必须携带 confidence、来源引用和 warning。
 
 DEV RunManifest、不可覆盖的结果保存和只读前检也已实现，见
-`docs/p9-run-provenance.md`。本地环境精确版本锁与实际包版本核对通过；规则证据仍未
-补齐，Git 基线验收见 `docs/git-baseline.md`。这些都是 P9.2 工程准备，尚未运行真实研究。
+`docs/p9-run-provenance.md`。本地环境精确版本锁与实际包版本核对通过；更高质量的规则
+证据仍可后续补齐，但不再阻断 DEV。Git 基线验收见 `docs/git-baseline.md`。这些都是
+P9.2 工程准备，尚未运行真实研究。
 
 10 个计划候选现已有内容寻址的 DEV 参数版本，并绑定策略规则与敏感度计划，见
 `docs/p9-parameter-version-contract.md`。这不代表选择了最优参数；正式执行器仍需验证全部
-运行输入并保留历史规则阻断。
+运行输入，并把 approximate 规则状态与价格取整影响写入每次运行记录。
 
 正式 DEV 文件内容哈希门禁也已实现，当前真实报告验证 12 类必需工件和 1 份附加诊断，
 仍缺少 1m、Funding，见 `docs/p9-dev-execution-inputs.md`。manifest 的业务完整性
-和区间交叉引用门禁现也已实现；真实报告另确认多周期 normalization batch 不完整，见
+和区间交叉引用门禁现也已实现；当前报告级硬 blocker 只剩 request-scoped 1m Candle 与
+Funding。全时期 normalization 缺口仍作为诊断保留，实际扫描遇到受影响数据时继续拒绝，见
 `docs/p9-dev-execution-semantics.md`。
 
 Universe 引用的零条目 `empty-ledger/0.1.0` 现已保存为独立内容寻址工件并通过版本核对，

@@ -11,7 +11,12 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from slagalpha.domain.universe import ContractRegistry, RegistryVerification
+from slagalpha.domain.universe import (
+    APPROXIMATE_TICK_SIZE_WARNING,
+    ContractRegistry,
+    EvidenceConfidence,
+    RegistryVerification,
+)
 from slagalpha.reporting.run_manifest import canonical_json_bytes
 from slagalpha.research.candle_inputs import CandleInputError
 from slagalpha.research.replay_inputs import ReplayDataInputError
@@ -73,7 +78,7 @@ def test_unconfirmed_trigger_does_not_create_price_plan(tmp_path: Path, case: st
     assert evidence.data_request is None
 
 
-@pytest.mark.parametrize("change", ["unverified", "inactive", "universe"])
+@pytest.mark.parametrize("change", ["low_confidence", "inactive", "universe"])
 def test_rule_and_universe_mismatch_fail_before_file_access(
     tmp_path: Path, change: str,
 ) -> None:
@@ -85,14 +90,43 @@ def test_rule_and_universe_mismatch_fail_before_file_access(
         })
     else:
         registry = context["registry"]
-        update = ({"verification_status": RegistryVerification.UNVERIFIED} if change == "unverified"
+        update = ({
+            "verification_status": RegistryVerification.UNVERIFIED,
+            "confidence": EvidenceConfidence.LOW,
+        } if change == "low_confidence"
                   else {"effective_to": datetime(2024, 1, 1, tzinfo=UTC)})
         context["registry"] = ContractRegistry(
             registry_version=registry.registry_version,
             entries=(registry.entries[0].model_copy(update=update),),
         )
-    with pytest.raises(CandleInputError, match="VERIFIED|Universe"):
+    with pytest.raises(CandleInputError, match="usable DEV|Universe"):
         compute_scan_trade_plan(**context)
+
+
+def test_approximate_tick_usage_records_price_and_outcome_impact(tmp_path: Path) -> None:
+    context = _trade_context(tmp_path)
+    registry = context["registry"]
+    context["registry"] = ContractRegistry(
+        registry_version=registry.registry_version,
+        entries=(registry.entries[0].model_copy(update={
+            "verification_status": RegistryVerification.UNVERIFIED,
+            "confidence": EvidenceConfidence.MEDIUM,
+        }),),
+    )
+
+    evidence = compute_scan_trade_plan(**context)
+
+    assert evidence.status == "ACCEPTED_PLAN"
+    assert evidence.rule_verification_status is RegistryVerification.UNVERIFIED
+    assert evidence.rule_warning_codes == (APPROXIMATE_TICK_SIZE_WARNING,)
+    assert evidence.approximate_tick_impact is not None
+    assert evidence.approximate_tick_impact.outcome_warning is True
+    assert set(evidence.approximate_tick_impact.price_adjustments) == {
+        "entry", "stop", "tp1", "tp2",
+    }
+    assert evidence.approximate_tick_impact.max_adjustment_bps is not None
+    assert evidence.data_request is not None
+    assert evidence.data_request.rule_warning_codes == (APPROXIMATE_TICK_SIZE_WARNING,)
 
 
 def test_rule_at_confirmation_is_not_enough_for_full_replay_horizon(tmp_path: Path) -> None:

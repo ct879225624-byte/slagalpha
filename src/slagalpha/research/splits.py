@@ -121,6 +121,7 @@ class ResearchRoleAudit(BaseModel):
     rule_eligible_member_day_count: int = Field(ge=0)
     rule_blocked_member_day_count: int = Field(ge=0)
     rule_reason_counts: dict[str, int]
+    rule_warning_counts: dict[str, int] = Field(default_factory=dict)
     readiness: ResearchReadiness
     blockers: tuple[str, ...]
 
@@ -142,7 +143,9 @@ class ResearchInputAuditReport(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["research-input-audit/0.1.0"] = (
+    schema_version: Literal[
+        "research-input-audit/0.1.0", "research-input-audit/0.2.0"
+    ] = (
         "research-input-audit/0.1.0"
     )
     split_hash: str
@@ -176,6 +179,9 @@ class ResearchInputAuditReport(BaseModel):
         if self.overall_readiness is not expected:
             raise ValueError("overall_readiness does not match roles")
         payload = self.model_dump(mode="json", exclude={"schema_version", "report_hash"})
+        if self.schema_version == "research-input-audit/0.1.0":
+            for role in payload["roles"]:
+                role.pop("rule_warning_counts")
         if self.report_hash != _canonical_sha256(payload):
             raise ValueError("research audit content hash mismatch")
         return self
@@ -305,14 +311,24 @@ def audit_research_inputs(
     reason_counters: dict[DatasetRole, Counter[str]] = {
         role: Counter() for role in DatasetRole
     }
+    warning_counters: dict[DatasetRole, Counter[str]] = {
+        role: Counter() for role in DatasetRole
+    }
     for snapshot in ordered:
         role = role_for_date(split, snapshot.selected_at.date())
-        gate = evaluate_universe_rule_gate(snapshot, registry)
+        gate = evaluate_universe_rule_gate(
+            snapshot,
+            registry,
+            allow_approximate_rules=role is DatasetRole.DEV,
+        )
         counters[role]["snapshot_days"] += 1
         counters[role]["member_days"] += gate.member_count
         counters[role]["eligible_member_days"] += gate.eligible_count
         counters[role]["blocked_member_days"] += gate.blocked_count
         reason_counters[role].update(gate.reason_counts)
+        warning_counters[role].update(
+            warning for entry in gate.entries for warning in entry.warning_codes
+        )
 
     audits: list[ResearchRoleAudit] = []
     for segment in split.segments:
@@ -331,6 +347,7 @@ def audit_research_inputs(
                 rule_eligible_member_day_count=values["eligible_member_days"],
                 rule_blocked_member_day_count=values["blocked_member_days"],
                 rule_reason_counts=dict(sorted(reason_counters[segment.role].items())),
+                rule_warning_counts=dict(sorted(warning_counters[segment.role].items())),
                 readiness=(
                     ResearchReadiness.BLOCKED
                     if blockers
@@ -359,6 +376,7 @@ def audit_research_inputs(
         "deferred_checks": deferred_checks,
     }
     return ResearchInputAuditReport(
+        schema_version="research-input-audit/0.2.0",
         split_hash=split.split_hash,
         contract_registry_version=registry.registry_version,
         daily_snapshot_hash=sequence_hash,

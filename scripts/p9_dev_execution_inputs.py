@@ -15,8 +15,8 @@ from slagalpha.research.parameters import DevParameterVersion
 from slagalpha.research.sensitivity import SensitivityPlan
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN_HASH = "c41e2771a8ca526e4c8ffa09a863b078e300fc7332b9090461e11e1c1f2b5ff9"
-PARAMETER_HASH = "56d5d45f745656ee7730ed152c2474f8a72aee3251f8d4f3fce02492f7da6cda"
+PLAN_HASH = "688113f39f756bd0585bb44831393eb4a4b1e013a68b750fc8817031ef10fca9"
+PARAMETER_HASH = "81a2c13d7c51473a3c753debd668718d98f7f34c04a3216a763c1c534891c21b"
 
 SELECTIONS = (
     (InputArtifactRole.STRATEGY_RULES, "docs/strategy-rules-v0.1.md",
@@ -29,16 +29,16 @@ SELECTIONS = (
      "0cc4f8fc002b77fa4cf767d610ccff2a4734006204104a8bd439313888f45615"),
     (InputArtifactRole.RESEARCH_INPUT_AUDIT,
      "data/manifests/research_input_audit/"
-     "d58f1cc2adcad91ebbc33bc3864e1f78388b2c9c8f6adb83f1b88f5b3d99e864.json",
-     "fe9b9ccaddccf802f719f647c67058d0921dd64bfd51a1dfcd6b56c306f749a6"),
+     "74e9a89210257478ba1b7ef89fd67ff3d6d12d87f6c44b6a4113369f30aab4f3.json",
+     "a27efd78300f23631e53e5a3ebf934d1497039960f4e0d22b7c32c4bb0659202"),
     (InputArtifactRole.SENSITIVITY_PLAN,
      "data/manifests/sensitivity_plan/"
-     "c41e2771a8ca526e4c8ffa09a863b078e300fc7332b9090461e11e1c1f2b5ff9.json",
-     "5d80b4bcddf6afc4bbe28a4587554b119c202bb443a55607c287f155b81f752a"),
+     "688113f39f756bd0585bb44831393eb4a4b1e013a68b750fc8817031ef10fca9.json",
+     "2be858312884abe88bf79083bb4a75ca3291d0aa98da23b29a536c8880d14d00"),
     (InputArtifactRole.PARAMETER_VERSION,
      "data/manifests/parameter_version/"
-     "56d5d45f745656ee7730ed152c2474f8a72aee3251f8d4f3fce02492f7da6cda.json",
-     "48670c2c6f6ee819c073267d3c032646ae11e1f3e23553057947e9e634408d11"),
+     "81a2c13d7c51473a3c753debd668718d98f7f34c04a3216a763c1c534891c21b.json",
+     "45e11fcf4ff73acfca3f5d0be4a1b6c98c021db84672f97e3676de37aeaf7ecd"),
     (InputArtifactRole.CONTRACT_REGISTRY,
      "data/manifests/contract_registry/"
      "f2a9370598caed227566b0c0903b215cd491aea45588d56e1dc3aea1b4e45ea0.json",

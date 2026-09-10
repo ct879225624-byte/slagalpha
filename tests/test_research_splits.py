@@ -120,7 +120,7 @@ def test_exact_global_split_boundaries_and_locked_role_guard() -> None:
         role_for_date(manifest, date(2026, 8, 1))
 
 
-def test_audit_blocks_all_roles_without_verified_rule_member_days() -> None:
+def test_audit_allows_approximate_rules_only_in_dev() -> None:
     start = date(2024, 1, 1)
     snapshots = tuple(_snapshot(start + timedelta(days=offset)) for offset in range(4))
     sequence_hash = snapshot_sequence_hash(snapshots)
@@ -140,11 +140,16 @@ def test_audit_blocks_all_roles_without_verified_rule_member_days() -> None:
     assert report.overall_readiness is ResearchReadiness.BLOCKED
     assert report.locked_test_consumed is False
     assert [role.expected_day_count for role in report.roles] == [2, 1, 1]
-    assert [role.rule_eligible_member_day_count for role in report.roles] == [0, 0, 0]
+    assert [role.rule_eligible_member_day_count for role in report.roles] == [2, 0, 0]
+    assert report.roles[0].readiness is ResearchReadiness.READY
+    assert report.roles[0].rule_warning_counts == {
+        "APPROXIMATE_HISTORICAL_TICK_SIZE": 2,
+    }
     assert all(
         role.rule_reason_counts == {"CONTRACT_RULE_UNVERIFIED": role.member_day_count}
-        for role in report.roles
+        for role in report.roles[1:]
     )
+    assert all(role.rule_warning_counts == {} for role in report.roles[1:])
     assert audit_research_inputs(
         split=split,
         snapshots=tuple(reversed(snapshots)),

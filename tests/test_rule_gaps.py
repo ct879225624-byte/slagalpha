@@ -9,6 +9,7 @@ import pytest
 
 from slagalpha.domain.universe import (
     ContractRegistry,
+    EvidenceConfidence,
     RegistryVerification,
     UniverseMember,
     UniverseSnapshot,
@@ -27,6 +28,16 @@ from slagalpha.research.splits import (
 from test_research_splits import _snapshot, _unverified_registry
 
 
+def _blocked_registry() -> ContractRegistry:
+    registry = _unverified_registry()
+    return ContractRegistry(
+        registry_version=registry.registry_version,
+        entries=(registry.entries[0].model_copy(update={
+            "confidence": EvidenceConfidence.LOW,
+        }),),
+    )
+
+
 def _inputs() -> tuple[ResearchSplitManifest, tuple[UniverseSnapshot, ...]]:
     start = date(2024, 1, 1)
     snapshots = tuple(_snapshot(start + timedelta(days=offset)) for offset in range(8))
@@ -41,7 +52,7 @@ def _inputs() -> tuple[ResearchSplitManifest, tuple[UniverseSnapshot, ...]]:
 
 def test_gaps_are_dev_only_contiguous_and_deterministic(tmp_path: Path) -> None:
     split, snapshots = _inputs()
-    registry = _unverified_registry()
+    registry = _blocked_registry()
     report = build_dev_rule_gap_report(split=split, snapshots=snapshots, registry=registry)
     assert report.blocked_member_day_count == 4
     assert report.eligible_member_day_count == 0
@@ -63,7 +74,7 @@ def test_gaps_are_dev_only_contiguous_and_deterministic(tmp_path: Path) -> None:
 
 def test_reason_changes_and_verified_days_do_not_bridge_gaps() -> None:
     split, snapshots = _inputs()
-    entry = _unverified_registry().entries[0]
+    entry = _blocked_registry().entries[0]
     # Day 1 missing, day 2 unverified, day 3 verified, day 4 missing.
     unverified = entry.model_copy(update={
         "effective_from": snapshots[1].effective_from,
@@ -88,7 +99,7 @@ def test_reason_changes_and_verified_days_do_not_bridge_gaps() -> None:
 
 def test_gaps_reject_incomplete_input_or_tampered_report() -> None:
     split, snapshots = _inputs()
-    registry = _unverified_registry()
+    registry = _blocked_registry()
     with pytest.raises(ResearchSplitError, match="exactly cover"):
         build_dev_rule_gap_report(split=split, snapshots=snapshots[:-1], registry=registry)
     report = build_dev_rule_gap_report(split=split, snapshots=snapshots, registry=registry)
@@ -137,7 +148,7 @@ def test_targets_sort_by_count_then_symbol_without_bridging_absent_membership() 
         daily_snapshot_hash=snapshot_sequence_hash(tuple(revised)),
     )
     report = build_dev_rule_gap_report(
-        split=split, snapshots=tuple(revised), registry=_unverified_registry()
+        split=split, snapshots=tuple(revised), registry=_blocked_registry()
     )
     assert [(t.symbol, t.blocked_member_day_count) for t in report.targets] == [
         ("BBBUSDT", 4), ("CCCUSDT", 4), ("AAAUSDT", 3)

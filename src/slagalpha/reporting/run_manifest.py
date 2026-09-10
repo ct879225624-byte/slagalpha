@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from datetime import datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal, Self
 from uuid import uuid4
@@ -19,6 +20,7 @@ from pydantic import (
     model_validator,
 )
 
+from slagalpha.domain.universe import APPROXIMATE_TICK_SIZE_WARNING
 from slagalpha.research.splits import DatasetRole
 
 
@@ -129,12 +131,47 @@ class DevRunInputs(BaseModel):
         return self
 
 
+class TickSizeRunImpact(BaseModel):
+    """Run-level visibility for prices and outcomes exposed to approximate ticks."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+
+    mode: Literal["VERIFIED_ONLY", "DEV_APPROXIMATE"]
+    approximate_rule_use_count: int = Field(ge=0, strict=True)
+    observed_price_count: int = Field(ge=0, strict=True)
+    outcome_warning_count: int = Field(ge=0, strict=True)
+    max_adjustment_bps: Decimal | None
+    warning_codes: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def validate_impact(self) -> Self:
+        if self.warning_codes != tuple(sorted(set(self.warning_codes))):
+            raise ValueError("tick-size run warnings must be unique and canonical")
+        if self.outcome_warning_count > self.approximate_rule_use_count:
+            raise ValueError("tick-size outcome warnings exceed approximate rule uses")
+        if (self.max_adjustment_bps is None) != (self.observed_price_count == 0):
+            raise ValueError("tick-size maximum adjustment must match observed prices")
+        if self.max_adjustment_bps is not None and self.max_adjustment_bps < 0:
+            raise ValueError("tick-size maximum adjustment cannot be negative")
+        if self.mode == "VERIFIED_ONLY":
+            if any((self.approximate_rule_use_count, self.observed_price_count,
+                    self.outcome_warning_count)) or self.warning_codes:
+                raise ValueError("verified-only runs cannot report approximate tick usage")
+        else:
+            if self.approximate_rule_use_count == 0:
+                raise ValueError("approximate DEV runs must report approximate rule usage")
+            if APPROXIMATE_TICK_SIZE_WARNING not in self.warning_codes:
+                raise ValueError("approximate DEV runs must disclose approximate tick usage")
+        return self
+
+
 class DevRunManifest(DevRunInputs):
     """A completed DEV result record, not a locked-test record or a strategy verdict."""
 
-    schema_version: Literal["dev-run-manifest/0.1.0"] = "dev-run-manifest/0.1.0"
+    schema_version: Literal["dev-run-manifest/0.2.0"] = "dev-run-manifest/0.2.0"
     started_at: datetime
     finished_at: datetime
+    tick_size_impact: TickSizeRunImpact
     result_content_hash: str
     run_id: str
 
@@ -172,6 +209,7 @@ def build_dev_run_manifest(
     started_at: datetime,
     finished_at: datetime,
     result: dict[str, Any],
+    tick_size_impact: TickSizeRunImpact,
 ) -> DevRunManifest:
     """Bind a completed result; this does not run P7 or relax any research input gate."""
 
@@ -181,9 +219,10 @@ def build_dev_run_manifest(
         DevRunManifest.validate_time(timestamp)
     payload = {
         **inputs.model_dump(mode="json"),
-        "schema_version": "dev-run-manifest/0.1.0",
+        "schema_version": "dev-run-manifest/0.2.0",
         "started_at": started_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
         "finished_at": finished_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+        "tick_size_impact": tick_size_impact.model_dump(mode="json"),
         "result_content_hash": hashlib.sha256(canonical_json_bytes(result)).hexdigest(),
     }
     return DevRunManifest.model_validate({

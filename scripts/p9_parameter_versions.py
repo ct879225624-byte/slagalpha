@@ -13,7 +13,7 @@ from slagalpha.research.parameters import (
 from slagalpha.research.sensitivity import SensitivityPlan
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN_HASH = "c41e2771a8ca526e4c8ffa09a863b078e300fc7332b9090461e11e1c1f2b5ff9"
+PLAN_HASH = "688113f39f756bd0585bb44831393eb4a4b1e013a68b750fc8817031ef10fca9"
 
 
 def main() -> None:

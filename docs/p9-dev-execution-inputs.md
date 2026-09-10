@@ -35,24 +35,25 @@ Aggregate Trades 是可选类别：缺失时 P7 固定使用 OHLC 不利顺序�
 
 脚本使用代码中冻结的期望哈希，不从文件现算“期望值”。当前 12 类必需工件和 1 份附加
 缺口审计逐字节匹配，
-报告哈希为：
+更新后的报告哈希为：
 
-`b1175c2a36c7baac885b160df48a57981bfa2ac05de5576883480baa2e9c8c6f`
+`cd60bc0c2076e132b6a57d2b7a09e9634b141c17bf87f954bde536cad0481b07`
 
 状态为 `BLOCKED`，缺少两类：
 
 - `CANDLE_ONE_MINUTE`
 - `FUNDING`
 
-同时保留 `NO_VERIFIED_HISTORICAL_CONTRACT_RULE_MEMBER_DAYS`。因此没有研究授权，也没有
-生成运行结果。
+历史规则 blocker 已由 DEV-only approximate fallback 解除；规则仍是 `UNVERIFIED`，并在
+审计中记录 16,440 条 warning。当前尚未生成运行结果。
 
 ## 尚未解决的语义门禁
 
 该报告证明的是“所选文件字节与预期哈希一致”，不证明文件业务内容足够覆盖研究区间。
-当前多周期 normalization batch 本身仍为 `complete=false`，含 27 个规范化失败；历史规则
-也全部未验证。显式空排除表工件见 `docs/p9-exclusion-ledger-artifact.md`。下一层语义门禁
-已实现并确认其版本以及其余阻断，见
+全时期多周期 normalization 诊断仍记录 27 个规范化失败；它不再预先阻断全部 DEV，但
+实际扫描读取受影响区间时仍失败关闭。历史规则仍是 `UNVERIFIED`，仅 DEV 可按明确 warning
+使用。显式空排除表工件见 `docs/p9-exclusion-ledger-artifact.md`。下一层语义门禁已实现并
+确认当前报告级 blocker 只剩 1m/Funding，见
 `docs/p9-dev-execution-semantics.md`。依赖 wheel 工件已补齐并实际重验，见
 `docs/p9-dependency-artifacts.md`。1m、Funding 的单请求 schema 和离线校验已实现，
 但仍无真实 accepted 请求集合及其完整聚合输入，见 `docs/p9-replay-data-contract.md`；

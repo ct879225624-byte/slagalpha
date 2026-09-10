@@ -34,6 +34,9 @@ class EvidenceConfidence(StrEnum):
     LOW = "LOW"
 
 
+APPROXIMATE_TICK_SIZE_WARNING = "APPROXIMATE_HISTORICAL_TICK_SIZE"
+
+
 class ExclusionCategory(StrEnum):
     """Frozen historical exclusion categories from the P0 data contract."""
 
@@ -205,6 +208,15 @@ class ContractRegistryEntry(BaseModel):
         """Whether lifecycle evidence passed review; other P8.3 gates still apply."""
 
         return self.verification_status is RegistryVerification.VERIFIED
+
+    @property
+    def eligible_for_dev_research(self) -> bool:
+        """Allow traceable medium-confidence rules in DEV without calling them verified."""
+
+        return self.eligible_for_locked_research or (
+            self.verification_status is RegistryVerification.UNVERIFIED
+            and self.confidence in (EvidenceConfidence.HIGH, EvidenceConfidence.MEDIUM)
+        )
 
 
 class ContractRegistry(BaseModel):
