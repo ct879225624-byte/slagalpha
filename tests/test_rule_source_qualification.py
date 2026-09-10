@@ -142,6 +142,7 @@ def test_qualification_writer_is_immutable_and_idempotent(tmp_path: Path) -> Non
     ("edd15e1f58a70e989de25edeead722687426b6363ac9a0629200097cfa5984c5", "Tardis.dev"),
     ("ba2d2619122c4b5dd5c895177095889ef90ba9923e8168b945f6bb5a9aa801b6", "Kaiko"),
     ("d286a057144bbd17ae9205f0125b4c82c0184aa42a7623f1c635a2957a09c0c6", "Amberdata"),
+    ("ad388a7df2d28f272b4a8e89b209a151bfc76b4e1ced30248be385b4d021c548", "Coin Metrics"),
 ])
 def test_checked_in_paid_source_reports_never_authorize_research(
     digest: str,

@@ -118,9 +118,9 @@ eligible member-day 或任何研究授权。
 ## 2026-09-10 付费来源资格审计
 
 新增 provider-neutral `rule-source-qualification/0.1.0`，只审阅公开文档，不购买、不登录、
-不使用 API key。Tardis.dev、Kaiko 和 Amberdata 均为
+不使用 API key。Tardis.dev、Kaiko、Amberdata 和 Coin Metrics 均为
 `VENDOR_CONFIRMATION_REQUIRED`；没有候选公开保证本项目所需的五类历史 filters、精确 UTC
-生效时刻、完整无遗漏变更历史和可哈希原始规则字节。三个内容寻址报告均保持 registry 与
+生效时刻、完整无遗漏变更历史和可哈希原始规则字节。四个内容寻址报告均保持 registry 与
 研究授权关闭，现有 eligible member-day 仍为 0。
 
 Tardis 按既定边界保持待确认：其 metadata 文档明确把非 contract multiplier 的变化列为

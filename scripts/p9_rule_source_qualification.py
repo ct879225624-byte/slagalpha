@@ -271,8 +271,104 @@ def _amberdata() -> RuleSourceQualificationReport:
     )
 
 
+def _coin_metrics() -> RuleSourceQualificationReport:
+    api = "https://docs.coinmetrics.io/api/v4/"
+    metadata = (
+        "https://gitbook-docs.coinmetrics.io/market-data/market-data-overview/"
+        "market-metadata"
+    )
+    faq = "https://docs.coinmetrics.io/resources/faqs"
+    terms = (
+        "https://coinmetrics.io/wp-content/uploads/2023/06/"
+        "Master-Terms-June-30-2023-.pdf"
+    )
+    documents = (
+        QualificationDocument(title="API v4 reference", url=api, purpose="SCHEMA"),
+        QualificationDocument(title="Market Data FAQ", url=faq, purpose="COVERAGE"),
+        QualificationDocument(title="Market metadata", url=metadata, purpose="SCHEMA"),
+        QualificationDocument(title="Master Terms", url=terms, purpose="LICENSE"),
+    )
+    states = {
+        criterion: QualificationFindingState.NOT_DOCUMENTED
+        for criterion in RuleSourceCriterion
+    }
+    for criterion in (
+        RuleSourceCriterion.AUDITABLE_LICENSE,
+        RuleSourceCriterion.MAX_QUANTITY,
+        RuleSourceCriterion.MIN_NOTIONAL,
+        RuleSourceCriterion.MIN_QUANTITY,
+        RuleSourceCriterion.STEP_SIZE,
+        RuleSourceCriterion.TICK_SIZE,
+    ):
+        states[criterion] = QualificationFindingState.CONFIRMED
+    evidence: dict[RuleSourceCriterion, tuple[str, ...]] = {
+        criterion: (api,) for criterion in RuleSourceCriterion
+    }
+    evidence[RuleSourceCriterion.AUDITABLE_LICENSE] = (terms,)
+    evidence[RuleSourceCriterion.BINANCE_USDM_COVERAGE] = (api, faq)
+    evidence[RuleSourceCriterion.DEV_DATE_COVERAGE] = (api, metadata)
+    evidence[RuleSourceCriterion.ORIGINAL_SOURCE_TIMESTAMP] = (api, metadata)
+    evidence[RuleSourceCriterion.RAW_BYTES_EXPORT] = (api, metadata)
+    notes = {
+        criterion: (
+            "The reviewed current reference-data endpoint does not document this criterion as a "
+            "historical time series."
+        )
+        for criterion in RuleSourceCriterion
+    }
+    notes[RuleSourceCriterion.AUDITABLE_LICENSE] = (
+        "Public master terms permit use for the customer's own internal business purposes; the "
+        "applicable order form must still be retained with acquired evidence."
+    )
+    notes[RuleSourceCriterion.BINANCE_USDM_COVERAGE] = (
+        "Binance USDT futures examples are documented, but complete Binance USDS-M instrument "
+        "coverage is not guaranteed on the public page."
+    )
+    notes[RuleSourceCriterion.DEV_DATE_COVERAGE] = (
+        "Market-data time ranges are documented, but the current metadata endpoint has no "
+        "historical-time query for the DEV interval."
+    )
+    notes[RuleSourceCriterion.TICK_SIZE] = (
+        "The current schema includes tick_size and order_price_increment."
+    )
+    notes[RuleSourceCriterion.STEP_SIZE] = (
+        "The current schema includes order_amount_increment."
+    )
+    notes[RuleSourceCriterion.MIN_QUANTITY] = (
+        "The current schema includes order_amount_min."
+    )
+    notes[RuleSourceCriterion.MAX_QUANTITY] = (
+        "The current schema includes order_amount_max."
+    )
+    notes[RuleSourceCriterion.MIN_NOTIONAL] = (
+        "The current schema includes order_size_min, defined as amount multiplied by price."
+    )
+    notes[RuleSourceCriterion.EXACT_EFFECTIVE_TIME] = (
+        "No effective-at timestamp is documented for current reference-data field values."
+    )
+    notes[RuleSourceCriterion.HISTORICAL_CHANGE_COMPLETENESS] = (
+        "No complete history or no-omission guarantee is documented for market metadata changes."
+    )
+    notes[RuleSourceCriterion.ORIGINAL_SOURCE_TIMESTAMP] = (
+        "Market-event timestamps do not establish exchange-origin timestamps for metadata values."
+    )
+    notes[RuleSourceCriterion.RAW_BYTES_EXPORT] = (
+        "The API returns normalized current metadata; exchange-native historical rule snapshots "
+        "are not documented."
+    )
+    return build_rule_source_qualification(
+        provider="Coin Metrics",
+        product="Market Data reference-data/markets",
+        assessed_on=ASSESSED_ON,
+        dev_start=DEV_START,
+        dev_end=DEV_END,
+        documents=documents,
+        findings=_findings(states, evidence, notes),
+    )
+
+
 def main() -> int:
-    reports = (_tardis(), _kaiko(), _amberdata())
+    reports = (_tardis(), _kaiko(), _amberdata(), _coin_metrics())
     outputs = []
     for report in reports:
         path = write_rule_source_qualification(report, ROOT / "data")

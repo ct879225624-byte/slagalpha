@@ -1,6 +1,6 @@
 # P9 付费历史规则来源资格审计
 
-审计日期：2026-09-10；结论：3 个候选均为 `VENDOR_CONFIRMATION_REQUIRED`，P9 pilot
+审计日期：2026-09-10；结论：4 个候选均为 `VENDOR_CONFIRMATION_REQUIRED`，P9 pilot
 尚未授权。
 
 ## 资格门槛
@@ -23,6 +23,7 @@ USDS-M、完整 DEV 日期、tick size、step size、min/max quantity、minimum 
 | Tardis.dev | 明确覆盖 Binance USDS-M 和 DEV 日期；price/amount increment 及其他非 multiplier 变更仅 best-effort，max quantity、逐规则原始时间戳和原始规则快照未公开 | `VENDOR_CONFIRMATION_REQUIRED` | `edd15e1f58a70e989de25edeead722687426b6363ac9a0629200097cfa5984c5` |
 | Kaiko | 公开 reference schema 提供 instrument identity、类别和交易起止时间；未公开 Binance USDS-M 历史 filters schema、精确变更时刻或完整性保证 | `VENDOR_CONFIRMATION_REQUIRED` | `ba2d2619122c4b5dd5c895177095889ef90ba9923e8168b945f6bb5a9aa801b6` |
 | Amberdata | 当前 futures reference schema 有价格/数量限制与精度字段，但 Binance 示例未区分 USDS-M，minimum cost 为 null，且未公开历史规则序列或完整性保证 | `VENDOR_CONFIRMATION_REQUIRED` | `d286a057144bbd17ae9205f0125b4c82c0184aa42a7623f1c635a2957a09c0c6` |
+| Coin Metrics | 当前 market metadata 最接近所需 schema，包含 tick、amount increment、min/max amount 和 minimum order size；但公开 API 没有历史 metadata 查询、生效时刻或完整性保证 | `VENDOR_CONFIRMATION_REQUIRED` | `ad388a7df2d28f272b4a8e89b209a151bfc76b4e1ced30248be385b4d021c548` |
 
 ### Tardis.dev
 
@@ -61,6 +62,20 @@ USDS-M、完整 DEV 日期、tick size、step size、min/max quantity、minimum 
 - [Ordering FAQ](https://www.amberdata.io/online-market-data-ordering-faq) 允许标准许可下商业
   使用但禁止再分发；原始历史规则快照的交付及审计条款仍需供应商确认。
 
+### Coin Metrics
+
+- [API v4 reference](https://docs.coinmetrics.io/api/v4/) 的 `/reference-data/markets`
+  当前 schema 明确包含 `tick_size`、`order_price_increment`、`order_amount_increment`、
+  `order_amount_min/max` 和 `order_size_min`，其中 `order_size_min` 定义为 amount × price。
+- [Market metadata](https://gitbook-docs.coinmetrics.io/market-data/market-data-overview/market-metadata)
+  说明这些是当前 listed-market reference data；公开 endpoint 没有 metadata 的
+  `start_time`/`end_time` 查询，也没有逐次规则变更的生效时间或无遗漏保证。
+- [FAQ](https://docs.coinmetrics.io/resources/faqs) 确认 derivatives 采用 exchange-reported
+  symbol，并把 contract specifications 指向同一个当前 reference endpoint；这仍不是历史序列。
+- [Master Terms](https://coinmetrics.io/wp-content/uploads/2023/06/Master-Terms-June-30-2023-.pdf)
+  允许客户内部业务使用；实际购买时仍需保存适用 order form。原始 exchange-native
+  历史规则快照的交付能力需要供应商书面确认。
+
 ## 供应商确认与 pilot 输入要求
 
 只有供应商书面确认并提供可核验样例后才重做资格报告。确认必须逐项覆盖：
@@ -77,7 +92,7 @@ USDS-M、完整 DEV 日期、tick size、step size、min/max quantity、minimum 
 直接调用付费 API。任何一项仍缺失，状态继续阻断，不能开始 registry promotion、248 symbol
 批量处理、1m/Funding 请求或 DEV 研究。
 
-复跑命令（返回码 1 是当前三个候选均未合格的预期结果）：
+复跑命令（返回码 1 是当前四个候选均未合格的预期结果）：
 
 ```powershell
 .venv\Scripts\python.exe scripts\p9_rule_source_qualification.py

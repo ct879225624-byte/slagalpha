@@ -397,17 +397,19 @@ DEV 后的 2025 HTTP 451，并非 JSON 快照。没有新增文件下载或规�
 （78,976,028 bytes）哈希核验全部通过。恢复提交为 `a962bb1`。
 
 随后新增 provider-neutral `rule-source-qualification/0.1.0`，以 12 项强制条件和三态结果
-审计 Tardis.dev、Kaiko、Amberdata 的公开 schema、coverage、subscription 与 license 文档。
-未购买、未登录、未使用凭证或付费 API。三个真实报告分别为：
+审计 Tardis.dev、Kaiko、Amberdata、Coin Metrics 的公开 schema、coverage、subscription
+与 license 文档。未购买、未登录、未使用凭证或付费 API。四个真实报告分别为：
 
 - Tardis.dev `edd15e1f58a70e989de25edeead722687426b6363ac9a0629200097cfa5984c5`
 - Kaiko `ba2d2619122c4b5dd5c895177095889ef90ba9923e8168b945f6bb5a9aa801b6`
 - Amberdata `d286a057144bbd17ae9205f0125b4c82c0184aa42a7623f1c635a2957a09c0c6`
+- Coin Metrics `ad388a7df2d28f272b4a8e89b209a151bfc76b4e1ced30248be385b4d021c548`
 
 三者均为 `VENDOR_CONFIRMATION_REQUIRED`，固定不修改 registry、不授权研究、不消费
 LOCKED_TEST。Tardis 非 multiplier 历史变化明确为 best-effort；Kaiko 未公开历史 filters；
-Amberdata 只公开当前 reference schema，未提供完整历史变更保证。按批准计划，单区间 pilot、
+Amberdata 只公开当前 reference schema；Coin Metrics 虽覆盖全部当前核心字段，也未提供历史
+metadata 查询或完整变更保证。按批准计划，单区间 pilot、
 人工 promotion、248 symbol 批量处理和 DEV 研究停在此处，等待供应商书面完整性保证及本地
-原始 BTCUSDT/ETHUSDT 样例。资格专项 `16 passed`；最终默认与冻结全量均为
-`901 passed, 1 skipped`，Ruff 全仓、冻结 mypy `173 source files`、CLI help、依赖 wheel
+原始 BTCUSDT/ETHUSDT 样例。资格与既有历史来源专项 `17 passed`；最终默认与冻结全量均为
+`902 passed, 1 skipped`，Ruff 全仓、冻结 mypy `173 source files`、CLI help、依赖 wheel
 哈希和报告幂等复跑全部通过。详细报告见 `docs/p9-paid-rule-source-qualification.md`。
