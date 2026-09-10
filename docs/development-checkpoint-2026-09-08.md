@@ -387,3 +387,27 @@ VALIDATION 与 LOCKED_TEST 均继续禁止；实施计划仍没有正式 P10–P
 DEV 后的 2025 HTTP 451，并非 JSON 快照。没有新增文件下载或规则材料，因此不改变
 `01b28cea...` 历史源审计、0 个 eligible member-day、注册表或研究授权；详细来源边界见
 `docs/p9-historical-rule-evidence-gap.md`。
+
+## 第 39 项：P9 验证基线与付费来源资格审计（完成至外部材料边界）
+
+将 `test_execution_semantics` 的核心清单交叉绑定用例与宿主解释器解耦；测试注入已经由
+独立 environment-lock 套件负责验证的锁结果，生产 preflight 的 CPython 3.12.13、精确包
+版本和 wheel 哈希检查未改。默认 CPython 3.12.14 与冻结 CPython 3.12.13 全量均为
+`892 passed, 1 skipped`；冻结环境 Ruff、mypy `171 source files`、CLI help 及 29 个 wheel
+（78,976,028 bytes）哈希核验全部通过。恢复提交为 `a962bb1`。
+
+随后新增 provider-neutral `rule-source-qualification/0.1.0`，以 12 项强制条件和三态结果
+审计 Tardis.dev、Kaiko、Amberdata 的公开 schema、coverage、subscription 与 license 文档。
+未购买、未登录、未使用凭证或付费 API。三个真实报告分别为：
+
+- Tardis.dev `edd15e1f58a70e989de25edeead722687426b6363ac9a0629200097cfa5984c5`
+- Kaiko `ba2d2619122c4b5dd5c895177095889ef90ba9923e8168b945f6bb5a9aa801b6`
+- Amberdata `d286a057144bbd17ae9205f0125b4c82c0184aa42a7623f1c635a2957a09c0c6`
+
+三者均为 `VENDOR_CONFIRMATION_REQUIRED`，固定不修改 registry、不授权研究、不消费
+LOCKED_TEST。Tardis 非 multiplier 历史变化明确为 best-effort；Kaiko 未公开历史 filters；
+Amberdata 只公开当前 reference schema，未提供完整历史变更保证。按批准计划，单区间 pilot、
+人工 promotion、248 symbol 批量处理和 DEV 研究停在此处，等待供应商书面完整性保证及本地
+原始 BTCUSDT/ETHUSDT 样例。资格专项 `16 passed`；最终默认与冻结全量均为
+`901 passed, 1 skipped`，Ruff 全仓、冻结 mypy `173 source files`、CLI help、依赖 wheel
+哈希和报告幂等复跑全部通过。详细报告见 `docs/p9-paid-rule-source-qualification.md`。

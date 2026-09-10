@@ -114,3 +114,16 @@ DEV 结束后，因此不构成历史规则材料。
 这只是对第二个第三方公开爬虫索引的可用性核验，不是证明互联网不存在其他材料。它没有
 产生可下载的 HTTP 200 原始快照，未改变第 38 项的 Internet Archive 审计、注册表、
 eligible member-day 或任何研究授权。
+
+## 2026-09-10 付费来源资格审计
+
+新增 provider-neutral `rule-source-qualification/0.1.0`，只审阅公开文档，不购买、不登录、
+不使用 API key。Tardis.dev、Kaiko 和 Amberdata 均为
+`VENDOR_CONFIRMATION_REQUIRED`；没有候选公开保证本项目所需的五类历史 filters、精确 UTC
+生效时刻、完整无遗漏变更历史和可哈希原始规则字节。三个内容寻址报告均保持 registry 与
+研究授权关闭，现有 eligible member-day 仍为 0。
+
+Tardis 按既定边界保持待确认：其 metadata 文档明确把非 contract multiplier 的变化列为
+best-effort。只有供应商书面保证完整性并提供 2023-11-02 附近 BTCUSDT/ETHUSDT 可核验样例，
+才允许开始单区间 pilot。逐 provider 证据、报告 hash 和确认问题见
+`docs/p9-paid-rule-source-qualification.md`。

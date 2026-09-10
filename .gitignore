@@ -56,6 +56,7 @@ dist/
 !/data/manifests/research_input_audit/
 !/data/manifests/research_split/
 !/data/manifests/rule_evidence_intake/
+!/data/manifests/rule_source_qualification/
 !/data/manifests/sensitivity_plan/
 !/data/manifests/universe_batch/
 /data/manifests/*/*
