@@ -26,6 +26,12 @@ from slagalpha.research.replay_prep import prepare_dev_replay
 from test_post_scan_support import _scan_report
 
 
+@pytest.fixture(name="tmp_path")
+def short_transport_tmp_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    # Hash-named transport paths need a short pytest leaf on Windows.
+    return tmp_path_factory.mktemp("t")
+
+
 def _kline(open_time: int) -> list[Any]:
     return [
         open_time,

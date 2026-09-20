@@ -3,7 +3,13 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
-.pytest-tmp/
+.pytest-tmp*/
+/.pytest-p3-stage-b-targeted/
+/.pytest-short/
+/.pytest-transport-*/
+/p3r/
+/p3t/
+/.p3-semantic-output.txt
 .mypy_cache/
 .ruff_cache/
 .coverage

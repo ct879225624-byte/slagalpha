@@ -1,13 +1,15 @@
 # SlagAlpha
 
-SlagAlpha is a deterministic research project for the personal Binance USDⓈ-M Crypto Trading Copilot described in `CRYPTO_AGENT_DEVELOPMENT_SPEC.md`.
+SlagAlpha is a deterministic Binance USD-M research/backtest system. **v0.1 was completed and frozen on 2026-09-20 as Frozen DEV Research.** It is not an approved live trading system. VALIDATION and LOCKED_TEST have not been used; realtime scanning and Binance account connectivity have not started.
 
-Current scope: **P0–P8 and the P9 DEV research inputs/plans are prepared**. DEV may use traceable medium-confidence rules as an explicitly disclosed tick-size approximation; VALIDATION and LOCKED_TEST remain strict. The remaining DEV replay inputs are request-scoped 1m Candle and Funding data. No strategy study or locked test has been executed. Realtime scanning and account connectivity have not started.
+The frozen DEV baseline returned approximately **+3.199858 R (ZERO)**, **-1.306150 R (BASELINE)**, and **-2.845698 R (STRESS)**. Its gross edge did not cover fees plus slippage. Pivot 3x3 returned approximately **+4.625010 / +1.482079 / +0.305166 R** across those same scenarios, but is only a strong DEV hypothesis for v0.2 research, not a validated profitable strategy or a live-trading conclusion.
+
+See the [v0.1 release overview](releases/v0.1/README.md), [release manifest](releases/v0.1/release_manifest.json), and [research diagnosis](artifacts/p9_v01_research_diagnosis_report.md) for the evidence and limitations. [Current project state](docs/current-state.md) distinguishes the frozen release from uncommitted v0.2 work.
 
 ## Requirements
 
 - Python 3.12 or 3.13
-- No Binance API key is required or accepted in V0.1
+- No Binance API key is required or accepted in v0.1
 
 ## Local setup
 
@@ -61,50 +63,5 @@ it does not download archive ZIPs.
 
 The frozen P0 rules and test scenarios are under `docs/`.
 
-## P9 research preparation (no strategy execution)
-
-```powershell
-.venv\Scripts\python.exe scripts\p9_research_input_audit.py
-.venv\Scripts\python.exe scripts\p9_sensitivity_plan.py
-.venv\Scripts\python.exe scripts\p9_dev_preflight.py
-```
-
-The first command freezes and audits the 548/274/274-day global split. The second saves
-10 default-centered, single-parameter candidates with three cost scenarios each. Both are
-planning/audit commands; they do not consume the locked test. DEV has 16,440 usable
-member-days under the disclosed approximate tick-size fallback. VALIDATION and LOCKED_TEST
-still require verified rules.
-
-The preflight command checks the frozen inputs, read-only Git state and the exact local
-environment recorded in `requirements.lock`. Exit 1 means expected research blockers;
-exit 2 means a lock/input error. It never starts research, changes Git or installs packages.
-The lock targets CPython 3.12.13 on Windows AMD64, not Ubuntu deployment, and pins versions
-without hashes in the lock file itself. The frozen wheel manifest supplies the installation
-artifact hashes. If the default `.venv` no longer uses CPython 3.12.13, restore an isolated
-verification environment outside the checkout with:
-
-```powershell
-pwsh -NoProfile -File scripts\p9_restore_frozen_environment.ps1
-```
-
-Use the `venv_python` path from the final `READY` JSON for P9 verification commands. The
-script pins and verifies the bootstrap tool, installs the exact interpreter without changing
-PATH or the registry, and installs all dependencies from the frozen local wheels. It does not
-authorize or start research. See `docs/p9-dependency-artifacts.md` and
-`docs/p9-run-provenance.md` for the artifact and RunManifest boundaries.
-
-The local Git baseline procedure and its acceptance receipt are documented in
-`docs/git-baseline.md`. Generated preflight reports are ignored so checking a clean
-checkout does not itself make that checkout dirty. No remote push is part of this workflow.
-
-The offline, source-revalidated P3–P6 scanner input path and its current limitations are
-documented in `docs/p9-scanner-input-contract.md`. Positive strategy paths are tested with
-explicit synthetic archives and rules; they do not approve historical seeds or real research.
-See `docs/development-checkpoint-2026-09-08.md` for the latest staged development checkpoint.
-
-The slower opt-in synthetic end-to-end check is documented in
-`docs/p9-source-pipeline-acceptance.md`; it uses real validators without approving real research.
-It invokes `research.source_request_set.compute_source_bound_request_set_with_checkpoints` for
-ordered cross-day computation and immutable daily checkpoints. That entry uses
-`research.scan_days.compute_source_bound_scan_day` and the per-slot P3–P6 computation path.
-The complete request set is returned only after every required DEV day and slot passes.
+Historical preparation, provenance, and synthetic pipeline details remain in `docs/`.
+Those older checkpoint documents describe their own dates, not the current release status.

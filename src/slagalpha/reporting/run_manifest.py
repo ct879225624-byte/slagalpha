@@ -233,7 +233,7 @@ def build_dev_run_manifest(
 def _publish_immutable(destination: Path, content: bytes) -> None:
     """Publish complete bytes without replacing a concurrently created destination."""
 
-    temporary = destination.with_name(f".{destination.name}.{uuid4().hex}.part")
+    temporary = destination.with_name(f".{uuid4().hex}.part")
     try:
         with temporary.open("xb") as stream:
             stream.write(content)
