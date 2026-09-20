@@ -162,6 +162,24 @@ def test_funding_schedule_comes_from_rows_not_an_eight_hour_constant(tmp_path: P
     ) == data
 
 
+def test_empty_historical_mark_price_is_preserved_as_missing_not_zero(
+    tmp_path: Path,
+) -> None:
+    request = _request()
+    rows = _funding(request)
+    rows[0]["markPrice"] = ""
+    response = _response(tmp_path, request, rows, endpoint="/fapi/v1/fundingRate")
+    _, data = build_replay_market_data_artifact(
+        project_dir=tmp_path,
+        request=request,
+        role="FUNDING",
+        responses=(response,),
+    )
+    assert isinstance(data, FundingDataset)
+    assert data.observations[0].rate is not None
+    assert data.observations[0].mark_price is None
+
+
 @pytest.mark.parametrize(("key", "value"), [
     ("symbol", "OTHERUSDT"), ("fundingTime", True), ("fundingTime", 1),
     ("fundingRate", None), ("fundingRate", "NaN"), ("markPrice", None),

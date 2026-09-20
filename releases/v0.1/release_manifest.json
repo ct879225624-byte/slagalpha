@@ -1,0 +1,117 @@
+{
+  "version": "v0.1",
+  "status": "FROZEN_DEV_RESEARCH",
+  "frozen_date": "2026-09-20",
+  "git_base_commit": "e305a28fe098fa3fd74441478f006e278ca1c47e",
+  "git_branch_at_freeze": "main",
+  "strategy_version": "ma-trend-pullback/0.1.0",
+  "scanner_version": "dev-source-scan-algorithm/0.1.1",
+  "scanner_schema_version": "dev-source-scan/0.1.0",
+  "replay_version": "event-replay/0.1.0",
+  "batch_replay_version": "p9-batch-replay/0.1.1",
+  "final_ledger": {
+    "ledger_hash": "b1c9ad95dfd270a67c06efa236eff8a7f0c30fff87b0db320f83a2e9d1e1934c",
+    "record_count": 2946,
+    "manifest_path": "data/manifests/confirmed_trigger_ledger/b1c9ad95dfd270a67c06efa236eff8a7f0c30fff87b0db320f83a2e9d1e1934c.json",
+    "reconciliation_path": "data/manifests/confirmed_trigger_ledger/b1c9ad95dfd270a67c06efa236eff8a7f0c30fff87b0db320f83a2e9d1e1934c.reconciliation.json",
+    "checkpoint_dir": "data/checkpoints/confirmed_trigger_ledger_scan_v3/3239205b07801da5a1296daa76f5de92fa35d091410713d45e8a57bad57bd783",
+    "reconciliation_status": "PASS"
+  },
+  "immutable_manifests": {
+    "strategy_rules": {
+      "path": "docs/strategy-rules-v0.1.md",
+      "sha256": "8275b2243149835a287c4f1ebf40ae6328d81e64dabaa8c3dad8bffc19054b93"
+    },
+    "parameter_version": "data/manifests/parameter_version/81a2c13d7c51473a3c753debd668718d98f7f34c04a3216a763c1c534891c21b.json",
+    "sensitivity_plan": {
+      "path": "data/manifests/sensitivity_plan/688113f39f756bd0585bb44831393eb4a4b1e013a68b750fc8817031ef10fca9.json",
+      "sha256": "2be858312884abe88bf79083bb4a75ca3291d0aa98da23b29a536c8880d14d00"
+    },
+    "research_split": "data/manifests/research_split/b262a24e59f69d7887e8bd5805eb9f11c4fcaef6611c8cd7480d5a2ca89027ca.json",
+    "scan_plan": "data/manifests/dev_scan_plan/02c709fa3dfdce157003e5695ba29eda3f446b25f125fca08ebea73d5e5fabb4.json",
+    "scan_report": {
+      "path": "data/manifests/dev_source_scan/73a60b3896836188bc20e005c6123fd03ddb9aca092b5da6dd57e575308b48e2.json",
+      "sha256": "f61fd9f00d163bc5fe70007823c934c8b8557312d99f352758adb32413c8462e"
+    },
+    "baseline_report": {
+      "path": "artifacts/dev_replay_baseline_BASELINE_20260913/summary.json",
+      "summary_hash": "9641eb65dee431c539ba4d441353dc9796d56a357e8f688612dfb50e1f81a0ea"
+    }
+  },
+  "formal_artifacts": {
+    "closeout_report": {
+      "path": "artifacts/p9_v01_research_diagnosis_report.md",
+      "sha256": "47ea5cc116779db7080f6b44bb515cca5f6ac7b0ffa4b9af09dfe0540ac499ed"
+    },
+    "closeout_summary": {
+      "path": "artifacts/p9_v01_closeout_summary.json",
+      "sha256": "a494b32e07fbb374d3ae5965c5009bf8c85ebfa49fd22e6bd11f38afc1892db6"
+    },
+    "closeout_hashes": "artifacts/p9_v01_closeout_hashes.json",
+    "baseline_replay_summaries": [
+      "artifacts/dev_replay_baseline_ZERO_20260913/summary.json",
+      "artifacts/dev_replay_baseline_BASELINE_20260913/summary.json",
+      "artifacts/dev_replay_baseline_STRESS_20260913/summary.json"
+    ],
+    "phase1_summary": {
+      "path": "artifacts/sens_p1/phase1-summary.json",
+      "sha256": "c1d896764df14bd251e279c73fd6c048a872b3c5644dc7d859fdf352b62527fc"
+    },
+    "phase2_summary": {
+      "path": "artifacts/sens_p2_stage_b_final/phase2-stage-b-summary-v3.json",
+      "sha256": "d14838225ea73ce1b248d3ac3cef8629ae10295d1b0c2b811cec8b78c8b6fbc2"
+    },
+    "phase3_stage_a_summary": {
+      "path": "artifacts/sens_p3_stage_a_summary/b27864dc0fab85ad56e486c080bc5a03882cb6cea8ae1b2a0f49c3c12db50f61.json",
+      "sha256": "9b876663c503674ef722a7f0fe453217577fb22fd8498e05cf4f87e727b8e979"
+    },
+    "phase3_summary": {
+      "path": "artifacts/sens_p3_stage_b/phase3-stage-b-summary.json",
+      "sha256": "c526606af212372f12ce98a2d4207777f2726a07914504e1e21b140975fe8de7"
+    }
+  },
+  "source_code_hashes": {
+    "src/slagalpha/strategy/indicators.py": "90bd352e7dda2aef6bb5b3158c9100ad7ac7404bf60457b23da59c3ccc5b4a6e",
+    "src/slagalpha/strategy/pivots.py": "8448a65285c6cab8f2cce6297f58915ed1b5801276b42bca8a6785125ea98563",
+    "src/slagalpha/strategy/setup.py": "cba619cf0db556c0cf04329807d83bfdd73e97bf1f871951b0c1e583cf14cacb",
+    "src/slagalpha/strategy/triggers.py": "de9c1963683a86ae1376b638a66bc06168407f1b3c43372b25b8b8a08676d983",
+    "src/slagalpha/strategy/plans.py": "3e555d34a43b098df381eed7ca83bcee571c897417b1aee70d5df2bee7fcb370",
+    "src/slagalpha/backtest/replay.py": "45227cb8f12bf96b44455179d5d9899075ea8b7c8b3e5acbefbd36221e56530e",
+    "src/slagalpha/backtest/costs.py": "5d6a96d7a68c373d788c2a7af31c9ab99eb90c10d1f95d74f9dea7a8a71513e1",
+    "src/slagalpha/backtest/analytics.py": "34c3a0dce0ef920665402f8f5bf849e01c892ec013264294a1dfaf36a96edd40",
+    "src/slagalpha/research/dev_source_scan.py": "ef45f97f0f7e4320a20bf0853a8be3f7be703235c413a782c5d00ae41a01a103",
+    "src/slagalpha/research/batch_replay.py": "fab94edec9114bf43af7931f6a06717cbeae9fb344c3ed3544889bba544bfc3c",
+    "src/slagalpha/research/replay_prep.py": "3c9ab87607eb18d5dd57da020cfaba773c2d1790865b71b758e57812d880bbcc",
+    "src/slagalpha/research/replay_market_data.py": "54a23fb6726798c643fdb412b2945f2eba532a9f7fc85b71dc03273a084b7a35",
+    "src/slagalpha/research/sensitivity.py": "59162f4c328d072de3d61169af5428df3c82c0173ef576749fe9adb5b35d7971",
+    "src/slagalpha/research/replan_sensitivity.py": "99af061e620d024337cb10fc1d044a54b2e047147fa23906c595ceeaac77e1b9",
+    "src/slagalpha/research/rescan_stage_a.py": "bc889a62654f15d961c91cf5514ccd935bcd878757e20d416f0345d2c23a5dd8",
+    "src/slagalpha/reporting/dev_research_summary.py": "d3d48323499272819b09fbf2b4f83de6aa0134ba9ae82ed7c2cee0522d066be6",
+    "src/slagalpha/reporting/dev_scan_summary.py": "afcce31f9eacb7962c8e0cc6199e42affdc8869b4d15d887dc2fd87dcf3ce597",
+    "src/slagalpha/data/binance_usdm_transport.py": "85c99a1e5ef502f6c564d80a9ffec49c98498c9451a4214ca74708995b9e4d84",
+    "src/slagalpha/data/download_cache.py": "340aae1e816345374274c5b65b4702dd5d5eee9a18dfa7423dc03000b575a301"
+  },
+  "included_file_inventory": {
+    "source": ["src/slagalpha/strategy", "src/slagalpha/backtest", "src/slagalpha/research", "src/slagalpha/reporting", "src/slagalpha/data"],
+    "scripts": ["scripts/p9_*.py"],
+    "tests": ["tests/test_*.py"],
+    "manifests": ["data/manifests/** (tracked immutable JSON plus the release-pinned paths above)"],
+    "release_metadata": ["releases/v0.1/release_manifest.json", "releases/v0.1/README.md"],
+    "formal_artifacts": ["artifacts/p9_v01_*", "artifacts/sens_p1/phase1-summary.json", "artifacts/sens_p2_stage_b_final/phase2-stage-b-summary-v3.json", "artifacts/sens_p3_stage_a_summary/*.json", "artifacts/sens_p3_stage_b/phase3-stage-b-summary.json", "artifacts/dev_replay_baseline_*/summary.json"]
+  },
+  "governance": {
+    "validation_consumed": false,
+    "locked_test_consumed": false,
+    "frozen_strategy_semantics_modified_after_closeout": false,
+    "best_dev_parameter_promoted": false,
+    "new_scan_replay_sensitivity_validation_locked_test_run_during_freeze": false
+  },
+  "known_caveats": [
+    "Windows path-length caused FileNotFoundError in 4 existing transport regression tests.",
+    "Phase 3 Stage A original candidate report was not independently persisted; Phase 3 Stage B used immutable checkpoint reconstruction plus request-set reconciliation.",
+    "Historical tick-size warnings remain in the DEV evidence.",
+    "DEV approximate funding-mark warnings remain in the replay evidence.",
+    "The full content-addressed ledger/raw market-data blobs are retained outside Git; the manifest, reconciliation, hashes, and paths are frozen here.",
+    "The scan report schema does not bind a Git/source commit; this release records the frozen source hashes explicitly and does not claim an independently persisted original Stage A report."
+  ]
+}

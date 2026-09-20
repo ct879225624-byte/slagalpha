@@ -143,6 +143,12 @@ def _decimal_string(value: Any) -> Decimal:
     return parsed
 
 
+def _optional_decimal_string(value: Any) -> Decimal | None:
+    if value == "":
+        return None
+    return _decimal_string(value)
+
+
 def _query_rows(
     request: DevReplayDataRequest, responses: tuple[ReplayRestResponse, ...], root: Path,
 ) -> list[tuple[ReplayRestResponse, list[Any]]]:
@@ -232,7 +238,9 @@ def _funding(
             if row.get("rateType", "Regular") != "Regular":
                 raise ReplayDataInputError("Special or unknown Funding rate type is unsupported")
             rate = _decimal_string(row.get("fundingRate"))
-            mark = _decimal_string(row.get("markPrice"))
+            # Binance historical Funding rows may publish an empty markPrice;
+            # preserve that as missing so P7 can fail closed without zero-filling.
+            mark = _optional_decimal_string(row.get("markPrice"))
             observations.append(FundingObservation(
                 settlement_time=datetime.fromtimestamp(timestamp / 1000, UTC),
                 rate=rate, mark_price=mark,

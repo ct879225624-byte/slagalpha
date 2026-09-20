@@ -1,0 +1,16 @@
+{
+  "schema_version": "p9-v0.1-closeout-content-hashes/1.0.0",
+  "algorithm": "SHA-256",
+  "generated_from_immutable_artifacts": true,
+  "files": {
+    "artifacts/p9_v01_research_diagnosis_report.md": "47ea5cc116779db7080f6b44bb515cca5f6ac7b0ffa4b9af09dfe0540ac499ed",
+    "artifacts/p9_v01_closeout_summary.json": "a494b32e07fbb374d3ae5965c5009bf8c85ebfa49fd22e6bd11f38afc1892db6",
+    "artifacts/sens_p1/phase1-summary.json": "c1d896764df14bd251e279c73fd6c048a872b3c5644dc7d859fdf352b62527fc",
+    "artifacts/sens_p2_stage_b_final/phase2-stage-b-summary-v3.json": "d14838225ea73ce1b248d3ac3cef8629ae10295d1b0c2b811cec8b78c8b6fbc2",
+    "artifacts/sens_p3_stage_b/phase3-stage-b-summary.json": "c526606af212372f12ce98a2d4207777f2726a07914504e1e21b140975fe8de7",
+    "artifacts/dev_replay_baseline_ZERO_20260913/summary.json": "bdf5d108a61117f2afdfede9060baa5fb4b9ed1f317f5bc57f28188de2583f3a",
+    "artifacts/dev_replay_baseline_BASELINE_20260913/summary.json": "9641eb65dee431c539ba4d441353dc9796d56a357e8f688612dfb50e1f81a0ea",
+    "artifacts/dev_replay_baseline_STRESS_20260913/summary.json": "5c61bf4bbec253d65fec37ca778a4d32b85d759a7c15172b3139fe0a4954f11f"
+  },
+  "note": "The three dev_replay_baseline summary hashes are their immutable artifact summary_hash values; all other entries are file SHA-256 values unless otherwise noted."
+}
